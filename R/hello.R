@@ -1,18 +1,21 @@
-# Hello, world!
-#
-# This is an example function named 'hello' 
-# which prints 'Hello, world!'.
-#
-# You can learn more about package authoring with RStudio at:
-#
-#   http://r-pkgs.had.co.nz/
-#
-# Some useful keyboard shortcuts for package authoring:
-#
-#   Build and Reload Package:  'Ctrl + Shift + B'
-#   Check Package:             'Ctrl + Shift + E'
-#   Test Package:              'Ctrl + Shift + T'
+library(shiny)
 
-hello <- function() {
-  print("Hello, world!")
+mymyData <- c()
+
+# Define the UI
+ui <- bootstrapPage(plotOutput('plot'))
+
+server <- function(input, output) {
+  output$plot <- renderPlot({
+    plot(myData, type='l', col='red')
+  })
 }
+
+myshinyplot <- function(x)
+{
+  myData <<- x
+  runApp(shinyApp(ui = ui, server = server ))
+}
+
+mymyData <- rnorm(50)
+myshinyplot(mymyData)
