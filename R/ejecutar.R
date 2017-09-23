@@ -163,7 +163,7 @@ server <- function(input, output) {
       resultado[[key]]
     }, simplify = FALSE))
   })
-  ####################################################################
+
 
   # ANALISIS DE DATOS
   output$normal <- renderPlot({
@@ -174,7 +174,7 @@ server <- function(input, output) {
                      media = estadisticos[["Media"]],
                      desest = estadisticos[["Desviación estándar"]])
     densidad.empirica(datosVec)
-
+    densidad.leyenda()
   })
   output$qqplot <- renderPlot({
     req(input$file1)
@@ -214,11 +214,11 @@ server <- function(input, output) {
                              "Shapiro-Wilk",
                              "Anderson-Darling"))
   })
-  ####################################################################
+
 
   # MODELADO DE SERIES DE TIEMPO
 
-  ####################################################################
+
 }
 
 
@@ -278,8 +278,9 @@ calcular.boot <- function(x, r = 1000) {
        desest = sd(resultado$t[,1]))
 }
 
+
 ######################################################################
-### FUNCIONES PARA ANALIZAR DATOS
+### FUNCIONES PARA ANALISIS DE DATOS
 ######################################################################
 histograma <- function(datos, bloques = "Sturges") {
   grafico <- hist(datos,
@@ -309,6 +310,18 @@ densidad.acumulada <- function(datos) {
                   main = "Densidad Acumulada Empírica")
   return(grafico)
 }
+densidad.leyenda <- function() {
+  legend(x = 'topright',
+         legend = c('Teórica', 'Empírica'),
+         fill = NULL,
+         col = c('cornflowerblue', 'brown4'),
+         border = "black",
+         bg = 'white',
+         lty = 'solid',
+         lwd = c(2, 2),
+         horiz = FALSE,
+         merge = FALSE)
+}
 cuartil.cuartil <- function(datos) {
   retorno <- list(puntos = qqnorm(datos,
                                   xlab = "Cuantiles Teóricos",
@@ -330,6 +343,11 @@ serie.tiempo <- function(datos, inicio = c(1900, 1), frecuencia = 1) {
 
   return(retorno)
 }
+
+
+######################################################################
+### FUNCIONES PARA MODELADO DE DATOS
+######################################################################
 
 
 
