@@ -29,14 +29,17 @@ ui <- fluidPage(
                    choices = c(Encabezado = "head",
                                "Compleo" = "all"),
                    selected = "head"),
-      #tags$hr(),
+      tags$hr(),
+      numericInput("column",
+                   label = "Columna del archivo",
+                   value = 1),
       sliderInput("tolerance",
-                  "Tamaño mínimo de registros:",
+                  "Nivel de tolerancia",
                   value = 30,
                   min = 20,
                   max = 200),
       sliderInput("bootstrap",
-                  "Cantidad de replicas bootstrap:",
+                  "Replicas bootstrap",
                   value = 1000,
                   min = 500,
                   max = 5000)
@@ -68,8 +71,8 @@ server <- function(input, output) {
 
   output$summary <- renderPrint({
     req(input$file1)
-    resultado <- list("Totales" = calcular.totales(columna = 1),
-                      "Estadísticos" = calcular.estadisticos(columna = 1,
+    resultado <- list("Totales" = calcular.totales(columna = input$column),
+                      "Estadísticos" = calcular.estadisticos(columna = input$column,
                                                              tolerancia = input$tolerance,
                                                              replicas = input$bootstrap))
     str(sapply(sprintf('%s', names(resultado)), function(key) {
@@ -131,5 +134,5 @@ calcular.boot <- function(x, r = 1000) {
        desest = sd(resultado$t[,1]))
 }
 
-# Create Shiny app ----
+
 shinyApp(ui, server)

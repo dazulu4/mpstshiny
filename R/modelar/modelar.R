@@ -89,8 +89,6 @@ server <- function(input, output) {
 }
 
 # Create Shiny app ----
-shinyApp(ui, server)
-
-
-# Auxiliar functions ----
-
+modelar.datos <- function() {
+  runApp(shinyApp(ui, server))
+}
