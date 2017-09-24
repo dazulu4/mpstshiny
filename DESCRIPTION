@@ -8,7 +8,9 @@ Depends: R (>= 3.4.1), shiny, shinythemes, boot, moments, nortest, graphics, Cai
 Imports: grDevices, graphics
 Enhances: FastRWeb
 Description: Paquete creado para hacer modelado predictivo con series de tiempo con funciones polinomiales hasta grado 5 (lineal, cuadrática, cúbica).
-License: GPL (>= 2)
+License: MIT + file LICENSE
+Encoding: ISO-8859-1
+LazyData: true
 NeedsCompilation: yes
 Packaged: 2017-09-24 17:49:11 UTC; svnuser
 Archs: i386, x64
