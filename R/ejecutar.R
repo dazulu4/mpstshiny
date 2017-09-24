@@ -13,14 +13,14 @@ require(graphics)
 ######################################################################
 ### DEFINICIÓN DE VARIABLES GLOBALES
 ######################################################################
-datos <- list()
-datosVec <- c()
+datos <<- list()
+datosVec <<- c()
 
-datosSerie <- list()
-modeloPron <- list()
+datosSerie <<- list()
+modeloPron <<- list()
 
-totales <- list()
-estadisticos <- list()
+totales <<- list()
+estadisticos <<- list()
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA
