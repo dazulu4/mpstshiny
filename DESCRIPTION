@@ -1,20 +1,14 @@
 Package: mpstshiny
-Version: 1
-Date: 2017-09-24
 Title: Modelado predictivo y series de tiempo
-Authors@R: c(person("Dennis Alexander Zuluaga", "Desarrollador", role = c("aut", "cre"), email = "dazuluag@unal.edu.co"),
-		   person("Davinson Mosquera Gonzalez", "Desarrollador", role = c("aut", "cre"), email = "davmosqueragon@unal.edu.co"),
-		   person("Pedro Turriago Sanchez", "Desarrollador", role = c("aut", "cre"), email = "pturriago@unal.edu.co")
-Author: Denis, Davinson y Pedro Desarrolladores.
+Version: 1.0
+Date: 2017-09-24
+Author: Dennis Alexander Zuluaga <dazuluag@unal.edu.co>, Davinson Mosquera Gonzalez <davmosqueragon@unal.edu.co>, Pedro Turriago Sanchez  <pturriago@unal.edu.co>
 Maintainer: Denis Desarrollador <dazuluag@unal.edu.co>, Davinson Desarrollador <davmosqueragon@unal.edu.co>, Pedro Desarrollador <pturriago@unal.edu.co>
-Depends: R (>= 3.4.1), shiny, moments, nortest, graphics, Cairo
+Depends: R (>= 3.4.1), shiny, shinythemes, boot, moments, nortest, graphics, Cairo
+Imports: grDevices, graphics
 Enhances: FastRWeb
 Description: Paquete creado para hacer modelado predictivo con series de tiempo con funciones polinomiales hasta grado 5 (lineal, cuadrática, cúbica).
 License: GPL (>= 2)
-SystemRequirements: shiny, moments, nortest, graphics, Cairo
 NeedsCompilation: yes
 Packaged: 2017-09-24 17:49:11 UTC; svnuser
-#Repository: CRAN
-#Date/Publication: 2015-09-26 09:05:40
-#Built: R 3.4.1; i386-w64-mingw32; 2017-08-16 00:40:22 UTC; windows
 Archs: i386, x64
