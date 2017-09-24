@@ -7,7 +7,6 @@ library(boot)
 library(moments)
 library(nortest)
 library(Cairo)
-library(data.table)
 require(graphics)
 
 ######################################################################
@@ -24,9 +23,9 @@ estadisticos <- list()
 ######################################################################
 ui <- fluidPage(theme = shinytheme("cerulean"),
                 #shinythemes::themeSelector(),
-                navbarPage("R-mpstshiny",
-                           tabPanel("Cargar",
-                                    titlePanel("Carga de Archivo"),
+                navbarPage("R-MPST",
+                           tabPanel("CARGAR",
+                                    titlePanel("Carga tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
                                         fileInput("file1", "Selecciona archivo de texto",
@@ -49,18 +48,18 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #                         "Comillas Simples" = "'"),
                                         #             selected = '"'),
                                         #tags$hr(),
-                                        radioButtons("disp", "Mostrar Datos",
+                                        radioButtons("disp", "Muestra de Datos",
                                                      choices = c(Encabezado = "head",
-                                                                 "Compleo" = "all"),
+                                                                 "Completo" = "all"),
                                                      selected = "head"),
                                         tags$hr(),
                                         sliderInput("tolerance",
-                                                    "Tolerancia bootstrap",
+                                                    "Cantidad mínima de registros",
                                                     value = 30,
                                                     min = 20,
                                                     max = 200),
                                         sliderInput("bootstrap",
-                                                    "Replicas bootstrap",
+                                                    "Cantidad replicas bootstrap",
                                                     value = 1000,
                                                     min = 500,
                                                     max = 5000),
@@ -72,14 +71,14 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         # tabsetPanel(type = "tabs",
                                         #             tabPanel("Datos", tableOutput("contents")),
                                         #             tabPanel("Resumen", verbatimTextOutput('summary')))
-                                        column(3, wellPanel("Datos", tableOutput("contents"))),
-                                        column(9, wellPanel("Resumen", verbatimTextOutput('summary')))
+                                        column(4, wellPanel("Contenido", tableOutput("contents"))),
+                                        column(8, wellPanel("Resumen", verbatimTextOutput('summary')))
                                       )
 
                                     )
                            ),
-                           tabPanel("Análisis",
-                                    titlePanel("Analisis de Datos"),
+                           tabPanel("ANALIZAR",
+                                    titlePanel("Analiza tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
                                         sliderInput("bins",
@@ -110,7 +109,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                       )
                                     )
                            ),
-                           tabPanel("Modelado",
+                           tabPanel("MODELAR",
                                     mainPanel(
                                       tabsetPanel(
                                         tabPanel("Tab 1",
@@ -139,6 +138,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 server <- function(input, output) {
 
   # CARGA DE ARCHIVO
+
   output$contents <- renderTable({
     req(input$file1)
     cargar.archivo(archivo = input$file1$datapath,
@@ -166,15 +166,21 @@ server <- function(input, output) {
 
 
   # ANALISIS DE DATOS
+
   output$normal <- renderPlot({
     req(input$file1)
-    #Gráfico 1.1: Histograma
+    #Gráfico Histograma y Densidades
     histograma(datosVec, input$bins)
     densidad.teorica(datosVec,
                      media = estadisticos[["Media"]],
-                     desest = estadisticos[["Desviación estándar"]])
+                     desv = estadisticos[["Desv. estándar"]])
     densidad.empirica(datosVec)
     densidad.leyenda()
+  })
+  output$ecdf <- renderPlot({
+    req(input$file1)
+    #Gráfico Densidad acumulada
+    densidad.acumulada(datosVec)
   })
   output$qqplot <- renderPlot({
     req(input$file1)
@@ -182,21 +188,6 @@ server <- function(input, output) {
     qqplot <- cuartil.cuartil(datosVec)
     qqplot$puntos
     qqplot$linea
-  })
-  output$serie <- renderPlot({
-    req(input$file1)
-    #Gráfico 1.3: Serie de tiempo
-    inicio <- unlist(strsplit(input$start, ','))
-    inicio1 <- ifelse(test = is.na(inicio[1]), yes = 2000, no = as.integer(inicio[1]))
-    inicio2 <- ifelse(test = is.na(inicio[2]), yes = 1, no = as.integer(inicio[2]))
-    serie.tiempo(datosVec,
-                 inicio = c(inicio1, inicio2),
-                 frecuencia = input$frecuency)
-  })
-  output$ecdf <- renderPlot({
-    req(input$file1)
-    #Gráfico 1.4: Densidad acumulada
-    densidad.acumulada(datosVec)
   })
   output$test <- renderPrint({
     req(input$file1)
@@ -213,6 +204,16 @@ server <- function(input, output) {
                row.names = c("Jarque-Bera",
                              "Shapiro-Wilk",
                              "Anderson-Darling"))
+  })
+  output$serie <- renderPlot({
+    req(input$file1)
+    #Gráfico 1.3: Serie de tiempo
+    inicio <- unlist(strsplit(input$start, ','))
+    inicio1 <- ifelse(test = is.na(inicio[1]), yes = 2000, no = as.integer(inicio[1]))
+    inicio2 <- ifelse(test = is.na(inicio[2]), yes = 1, no = as.integer(inicio[2]))
+    serie.tiempo(datosVec,
+                 inicio = c(inicio1, inicio2),
+                 frecuencia = input$frecuency)
   })
 
 
@@ -243,28 +244,28 @@ calcular.totales <- function(columna = 1) {
   totalNN <- sum(is.na(datosNN))
   datos <<- na.omit(data.frame(datosNN))
   totalNM <- length(datos[,columna])
-  totales <<- list("Registros totales" = total,
-                   "Registros numéricos" = totalNM,
-                   "Registros no numéricos" = totalNN,
-                   "Registros nulos" = totalNA)
+  totales <<- list("Cargados" = total,
+                   "Numéricos" = totalNM,
+                   "No numéricos" = totalNN,
+                   "Valores nulos" = totalNA)
 
   datosVec <<- datos[,columna]
   datos <<- data.frame(datosVec)
 }
 calcular.estadisticos <- function(columna = 1, tolerancia = 30, replicas = 1000) {
   media <- round(mean(datos[,columna]), 2)
-  desest <- round(sd(datos[,columna]), 4)
+  desv <- round(sd(datos[,columna]), 4)
   minimo <- round(min(datos[,columna]), 2)
   maximo <- round(max(datos[,columna]), 2)
   bootstrap <- FALSE
   if(length(datos[,columna]) < tolerancia) {
     resultado <- calcular.boot(datos[,columna], replicas)
     media <- round(resultado$media, 2)
-    desest <- round(resultado$desest, 2)
+    desv <- round(resultado$desv, 2)
     bootstrap <- TRUE
   }
   estadisticos <<- list(Media = media,
-                        "Desviación estándar" = desest,
+                        "Desv. estándar" = desv,
                         "Mínimo" = minimo,
                         "Máximo" = maximo,
                         Bootstrap = bootstrap)
@@ -275,7 +276,7 @@ calcular.media <- function(x, d) {
 calcular.boot <- function(x, r = 1000) {
   resultado <- boot(x, statistic = calcular.media, R = r)
   list(media = resultado$t0,
-       desest = sd(resultado$t[,1]))
+       desv = sd(resultado$t[,1]))
 }
 
 
@@ -286,28 +287,22 @@ histograma <- function(datos, bloques = "Sturges") {
   grafico <- hist(datos,
                   probability = TRUE,
                   breaks = bloques,
-                  col = "aliceblue", #col = "#75AADB",
-                  border = "gray",
+                  col = "cornsilk2", #col = "#75AADB",
+                  border = "cornsilk4",
                   main = "Histograma",
                   xlab = "Cuantiles",
                   ylab = "Densidad")
   return(grafico)
 }
-densidad.teorica <- function(datos, media, desest, muestra = 1000) {
+densidad.teorica <- function(datos, media, desv, muestra = 1000) {
   xt <- seq(from = min(datos), to = max(datos), length.out = muestra)
-  yt <- dnorm(xt, mean = media, sd = desest)
+  yt <- dnorm(xt, mean = media, sd = desv)
   grafico <- lines(xt, yt, col = "cornflowerblue", lwd = 2)
   return(grafico)
 }
 densidad.empirica <- function(datos) {
   densidad <- density(datos)
   grafico <- lines(densidad, col = "brown4", lwd = 2)
-  return(grafico)
-}
-densidad.acumulada <- function(datos) {
-  grafico <- plot(ecdf(datos),
-                  col = "black",
-                  main = "Densidad Acumulada Empírica")
   return(grafico)
 }
 densidad.leyenda <- function() {
@@ -322,6 +317,12 @@ densidad.leyenda <- function() {
          horiz = FALSE,
          merge = FALSE)
 }
+densidad.acumulada <- function(datos) {
+  grafico <- plot(ecdf(datos),
+                  col = "black",
+                  main = "Densidad Acumulada Empírica")
+  return(grafico)
+}
 cuartil.cuartil <- function(datos) {
   retorno <- list(puntos = qqnorm(datos,
                                   xlab = "Cuantiles Teóricos",
@@ -334,8 +335,8 @@ serie.tiempo <- function(datos, inicio = c(1900, 1), frecuencia = 1) {
                     start = inicio,
                     frequency = frecuencia)
   retorno <- plot(datosSerie,
-                  col = "brown4",
-                  pch = 20,
+                  col = "blue4",
+                  #pch = 22,
                   type = "l",
                   main = "Serie de tiempo",
                   xlab = "Tiempo",
@@ -359,6 +360,6 @@ ejecutar <- function() {
 }
 
 
-#shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
 
 
