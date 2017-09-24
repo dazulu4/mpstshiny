@@ -7,6 +7,7 @@ library(boot)
 library(moments)
 library(nortest)
 library(Cairo)
+library(forecast)
 require(graphics)
 
 ######################################################################
@@ -14,7 +15,10 @@ require(graphics)
 ######################################################################
 datos <- list()
 datosVec <- c()
+
 datosSerie <- list()
+modeloPron <- list()
+
 totales <- list()
 estadisticos <- list()
 
@@ -90,11 +94,11 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         textInput("start",
                                                   label = "Inicio de la serie",
                                                   value = "2000,1"),
-                                        sliderInput("frecuency",
-                                                    "Frecuencia de la serie",
-                                                    value = 4,
-                                                    min = 1,
-                                                    max = 365)
+                                        numericInput("frequency",
+                                                     label = "Frecuencia de la serie",
+                                                     value = 4,
+                                                     min = 1,
+                                                     max = 365.25)
                                       ),
                                       mainPanel(
                                         tabsetPanel(type = "tabs",
@@ -110,25 +114,41 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                     )
                            ),
                            tabPanel("MODELAR",
-                                    mainPanel(
-                                      tabsetPanel(
-                                        tabPanel("Tab 1",
-                                                 h4("Datos"),
-                                                 tableOutput("table"), #Output: aca van los datos de la tabla
-                                                 h4("Verbatim text output"),
-                                                 verbatimTextOutput("txtout"),
-                                                 h1("Header 1"),
-                                                 h2("Header 2"),
-                                                 h3("Header 3"),
-                                                 h4("Header 4"),
-                                                 h5("Header 5")
+                                    titlePanel("Modela tus Datos"),
+                                    sidebarLayout(
+                                      sidebarPanel(
+                                        selectInput("model", "Modelo",
+                                                    choices = c("Tendencias simple" = "trend",
+                                                                "Tendencias con Estacionalidad" = "season",
+                                                                "Suavizado Holt Winter Aditivo" = "smooth1",
+                                                                "Suavizado Holt Winter Multiplicativo" = "smooth2")
                                         ),
-                                        tabPanel("Tab 2", "This panel is intentionally left blank"),
-                                        tabPanel("Tab 3", "This panel is intentionally left blank")
+                                        tags$br(),
+                                        radioButtons("func", "Función",
+                                                     choices = c("Regresión Lineal" = "lineal",
+                                                                 "Regresión Cuadrática" = "quadratic",
+                                                                 "Regresión Cúbica" = "cubic"),
+                                                     selected = "lineal")
+                                        # ,tags$hr(),
+                                        # radioButtons("interven", "Intervenciones",
+                                        #              choices = c("Ninguno" = "inone",
+                                        #                          "Cambio de nivel" = "level",
+                                        #                          "Cambio de pendiente" = "slope",
+                                        #                          "Outliers" = "outliers"),
+                                        #              selected = "inone")
+                                      ),
+                                      mainPanel(
+                                        tabsetPanel(
+                                          tabPanel("Pronóstico",
+                                                   plotOutput("forecast")),
+                                          tabPanel("Diagnóstico",
+                                                   plotOutput("diagnosis")),
+                                          tabPanel("Resumen",
+                                                   verbatimTextOutput('summary1'))
+                                        )
                                       )
                                     )
                            )
-
                 )
 )
 
@@ -208,18 +228,55 @@ server <- function(input, output) {
   output$serie <- renderPlot({
     req(input$file1)
     #Gráfico 1.3: Serie de tiempo
-    inicio <- unlist(strsplit(input$start, ','))
-    inicio1 <- ifelse(test = is.na(inicio[1]), yes = 2000, no = as.integer(inicio[1]))
-    inicio2 <- ifelse(test = is.na(inicio[2]), yes = 1, no = as.integer(inicio[2]))
-    serie.tiempo(datosVec,
-                 inicio = c(inicio1, inicio2),
-                 frecuencia = input$frecuency)
+    generar.serie(datosVec,
+                  inicio = input$start,
+                  frecuencia = input$frequency)
+    serie.tiempo(datosSerie)
   })
 
 
   # MODELADO DE SERIES DE TIEMPO
 
+  calcular.modelo <- reactive({
+    generar.serie(datosVec, input$start, input$frequency);
+    switch(input$model,
+           "trend" = tendencia.funcion(datosSerie, input$func),
+           "season" = tendencia.funcion(datosSerie, input$func, estacion = TRUE),
+           "smooth1" = mostrar.mensaje(mensaje = "Suavizado Holt Winter aditivo no implementado!"),
+           "smooth2" = mostrar.mensaje(mensaje = "Suavizado Holt Winter multiplicativo no implementado!"))
+  })
 
+  calcular.modelo.func <- reactive({
+    generar.serie(datosVec, input$start, input$frequency);
+    switch(input$func,
+           "lineal" = calcular.lineal(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
+           "quadratic" = calcular.cuadratica(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
+           "cubic" = calcular.cubica(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)))
+  })
+
+  output$forecast <- renderPlot({
+    req(input$file1)
+    calcular.modelo()
+    calcular.modelo.func()
+    tendencia.opcion(datosSerie, "pronostico")
+  })
+  output$diagnosis <- renderPlot({
+    req(input$file1)
+    calcular.modelo()
+    calcular.modelo.func()
+    tendencia.opcion(datosSerie, "diagnostico")
+  })
+  output$summary1 <- renderPrint({
+    req(input$file1)
+    calcular.modelo()
+    calcular.modelo.func()
+    tendencia.opcion(datosSerie, "resumen")
+  })
+
+  # Presenta mensajes al usuario
+  mostrar.mensaje <- function(titulo = "Importante!", mensaje = "No implementado") {
+    showModal(modalDialog(title = titulo, mensaje, easyClose = TRUE))
+  }
 }
 
 
@@ -314,6 +371,7 @@ densidad.leyenda <- function() {
          bg = 'white',
          lty = 'solid',
          lwd = c(2, 2),
+         bty = "n",
          horiz = FALSE,
          merge = FALSE)
 }
@@ -330,18 +388,22 @@ cuartil.cuartil <- function(datos) {
                   linea = qqline(datos))
   return(retorno)
 }
-serie.tiempo <- function(datos, inicio = c(1900, 1), frecuencia = 1) {
+generar.serie <- function(datos, inicio = "2000,1", frecuencia = 4) {
+  inicio <- unlist(strsplit(inicio, ','))
+  inicio1 <- ifelse(test = is.na(inicio[1]), yes = 2000, no = as.integer(inicio[1]))
+  inicio2 <- ifelse(test = is.na(inicio[2]), yes = 1, no = as.integer(inicio[2]))
   datosSerie <<- ts(datos,
-                    start = inicio,
+                    start = c(inicio1,inicio2),
                     frequency = frecuencia)
-  retorno <- plot(datosSerie,
+}
+serie.tiempo <- function(datos) {
+  retorno <- plot(datos,
                   col = "blue4",
                   #pch = 22,
                   type = "l",
                   main = "Serie de tiempo",
                   xlab = "Tiempo",
                   ylab = "Valores")
-
   return(retorno)
 }
 
@@ -349,7 +411,103 @@ serie.tiempo <- function(datos, inicio = c(1900, 1), frecuencia = 1) {
 ######################################################################
 ### FUNCIONES PARA MODELADO DE DATOS
 ######################################################################
+tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
+  if(funcion == "lineal") {
+    calcular.lineal(datos, estacion)
+  }
+  else if(funcion == "quadratic") {
+    calcular.cuadratica(datos, estacion)
+  }
+  else if(funcion == "cubic") {
+    calcular.cubica(datos, estacion)
+  }
+  else {
+    return()
+  }
+}
+tendencia.opcion <- function(datos, opcion) {
+  if(opcion == "pronostico") {
+    graficar.tendencia(datosSerie,
+                       modeloPron)
+  }
+  else if(opcion == "diagnostico") {
+    graficar.diagnostico(datosSerie,
+                         modeloPron)
+  }
+  else if(opcion == "resumen") {
+    resumir.diagnostico(modeloPron)
+  }
+  else {
+    return()
+  }
+}
 
+# FUNCIONES DE MODELADO DE BAJO NIVEL - PROCESAMIENTO TIPO FUNCIÓN
+
+calcular.lineal <- function(datos, estacion = FALSE) {
+  tiempo <- seq(1:length(datos))
+  if(estacion) {
+    It <- calcular.estacion(datos)
+    modeloPron <<- lm(formula = datos ~ tiempo + It)
+  }
+  else {
+    modeloPron <<- lm(formula = datos ~ tiempo)
+  }
+}
+calcular.cuadratica <- function(datos, estacion = FALSE) {
+  tiempo <- seq(1:length(datos))
+  tiempo2 <- tiempo*tiempo
+  if(estacion) {
+    It <- calcular.estacion(datos)
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + It)
+  }
+  else {
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2)
+  }
+}
+calcular.cubica <- function(datos, estacion = FALSE) {
+  tiempo <- seq(1:length(datos))
+  tiempo2 <- tiempo*tiempo
+  tiempo3 <- tiempo*tiempo*tiempo
+  if(estacion) {
+    It <- calcular.estacion(datos)
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + It)
+  }
+  else {
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3)
+  }
+}
+calcular.estacion <- function(datos) {
+  seasonaldummy(datos)
+}
+
+# FUNCIONES DE MODELADO DE BAJO NIVEL - PROCESAMIENTO GENERAL
+
+graficar.tendencia <- function(datos, modelo) {
+  tiempo <- seq(1:length(datos))
+  list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
+       pron = lines(modelo$fitted.values, col = "red", lwd = 2),
+       leyenda = legend("topleft",
+                        c("Real","Pronostico"),
+                        lwd = c(2, 2),
+                        col = c('black','red'),
+                        bty = "n"))
+}
+graficar.diagnostico <- function(datos, modelo) {
+  # options(repr.plot.width=10, repr.plot.height=6)
+  tiempo <- seq(1:length(datos))
+  residual = modelo$residuals
+  list(tablero = par(mfrow=c(2,2)),
+       residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
+       rlinea = abline(h=0, lty=2),
+       densidad = plot(density(residual), xlab='x', main= 'Densidad residuales', col="red"),
+       qpuntos = qqnorm(residual),
+       qlinea = qqline(residual, col=2),
+       correl = acf(residual, ci.type="ma", 60))
+}
+resumir.diagnostico <- function(modelo) {
+  summary(modelo)
+}
 
 
 ######################################################################
@@ -360,6 +518,6 @@ ejecutar <- function() {
 }
 
 
-shinyApp(ui = ui, server = server)
+#shinyApp(ui = ui, server = server)
 
 
