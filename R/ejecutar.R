@@ -591,6 +591,7 @@ resumir.diagnostico <- function(modelo) {
 ### DEFINICIÓN FUNCIÓN PARA EJECUTAR PROGRAMA
 ######################################################################
 ejecutar <- function() {
+  useShinyjs()
   runApp(shinyApp(ui = ui, server = server))
 }
 
