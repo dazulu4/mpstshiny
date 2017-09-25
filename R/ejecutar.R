@@ -3,6 +3,7 @@
 ######################################################################
 library(shiny)
 library(shinythemes)
+library(shinyjs)
 library(boot)
 library(moments)
 library(nortest)
@@ -13,14 +14,14 @@ require(graphics)
 ######################################################################
 ### DEFINICIÓN DE VARIABLES GLOBALES
 ######################################################################
-datos <- list()
-datosVec <- c()
+datos <<- list()
+datosVec <<- c()
 
-datosSerie <- list()
-modeloPron <- list()
+datosSerie <<- list()
+modeloPron <<- list()
 
-totales <- list()
-estadisticos <- list()
+totales <<- list()
+estadisticos <<- list()
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA
@@ -32,7 +33,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                     titlePanel("Carga tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
-                                        fileInput("file1", "Selecciona archivo de texto",
+                                        fileInput("file1", h4("Selecciona archivo de texto"),
                                                   buttonLabel = "Explorar...",
                                                   placeholder = "Sin archivo",
                                                   multiple = TRUE,
@@ -41,7 +42,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                              ".csv")),
                                         #tags$hr(),
                                         checkboxInput("header", "Encabezado", FALSE),
-                                        radioButtons("sep", "Separador",
+                                        radioButtons("sep", h4("Separador"),
                                                      choices = c(Coma = ",",
                                                                  "Punto y Coma" = ";",
                                                                  Tabulador = "\t"),
@@ -52,31 +53,31 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #                         "Comillas Simples" = "'"),
                                         #             selected = '"'),
                                         #tags$hr(),
-                                        radioButtons("disp", "Muestra de Datos",
+                                        radioButtons("disp", h4("Muestra de Datos"),
                                                      choices = c(Encabezado = "head",
                                                                  "Completo" = "all"),
                                                      selected = "head"),
                                         tags$hr(),
                                         sliderInput("tolerance",
-                                                    "Cantidad mínima de registros",
+                                                    h4("Cantidad mínima de registros"),
                                                     value = 30,
                                                     min = 20,
                                                     max = 200),
                                         sliderInput("bootstrap",
-                                                    "Cantidad replicas bootstrap",
+                                                    h4("Cantidad replicas bootstrap"),
                                                     value = 1000,
                                                     min = 500,
                                                     max = 5000),
                                         numericInput("column",
-                                                     label = "Columna del archivo",
+                                                     label = h4("Columna del archivo"),
                                                      value = 1)
                                       ),
                                       mainPanel(
                                         # tabsetPanel(type = "tabs",
                                         #             tabPanel("Datos", tableOutput("contents")),
                                         #             tabPanel("Resumen", verbatimTextOutput('summary')))
-                                        column(4, wellPanel("Contenido", tableOutput("contents"))),
-                                        column(8, wellPanel("Resumen", verbatimTextOutput('summary')))
+                                        column(4, wellPanel(h4("Contenido"), tableOutput("contents"))),
+                                        column(8, wellPanel(h4("Resumen"), verbatimTextOutput('summary')))
                                       )
 
                                     )
@@ -86,16 +87,16 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                     sidebarLayout(
                                       sidebarPanel(
                                         sliderInput("bins",
-                                                    "Número de bloques",
+                                                    h4("Número de bloques"),
                                                     value = 15,
                                                     min = 1,
                                                     max = 100),
                                         tags$hr(),
                                         textInput("start",
-                                                  label = "Inicio de la serie",
+                                                  label = h4("Inicio de la serie"),
                                                   value = "2000,1"),
                                         numericInput("frequency",
-                                                     label = "Frecuencia de la serie",
+                                                     label = h4("Frecuencia de la serie"),
                                                      value = 4,
                                                      min = 1,
                                                      max = 365.25)
@@ -117,17 +118,19 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                     titlePanel("Modela tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
-                                        selectInput("model", "Modelo",
-                                                    choices = c("Tendencias simple" = "trend",
-                                                                "Tendencias con Estacionalidad" = "season",
-                                                                "Suavizado Holt Winter Aditivo" = "smooth1",
-                                                                "Suavizado Holt Winter Multiplicativo" = "smooth2")
+                                        selectInput("model", h4("Selecciona el Modelo"),
+                                                    choices = c("Tendencia Simple" = "trend",
+                                                                "Tendencia con Estacionalidad" = "season",
+                                                                "Suavizado Holt Winters" = "smoothhw")
                                         ),
                                         tags$br(),
-                                        radioButtons("func", "Función",
+                                        useShinyjs(),
+                                        radioButtons("func", h4("Selecciona la Función"),
                                                      choices = c("Regresión Lineal" = "lineal",
                                                                  "Regresión Cuadrática" = "quadratic",
-                                                                 "Regresión Cúbica" = "cubic"),
+                                                                 "Regresión Cúbica" = "cubic",
+                                                                 "Regresión Grado 4" = "gfour",
+                                                                 "Regresión Grado 5" = "gfive"),
                                                      selected = "lineal")
                                         # ,tags$hr(),
                                         # radioButtons("interven", "Intervenciones",
@@ -237,13 +240,22 @@ server <- function(input, output) {
 
   # MODELADO DE SERIES DE TIEMPO
 
+  observe({
+    if (input$model == "smoothhw") {
+      shinyjs::disable(selector = "[type=radio][name=func]")
+      shinyjs::runjs("$('[type=radio][name=func]').parent().parent().addClass('disabled').css('opacity', 0.5)")
+    } else {
+      shinyjs::enable(selector = "[type=radio][name=func]")
+      shinyjs::runjs("$('[type=radio][name=func]').parent().parent().addClass('enabled').css('opacity', 1)")
+    }
+  })
+
   calcular.modelo <- reactive({
     generar.serie(datosVec, input$start, input$frequency);
     switch(input$model,
            "trend" = tendencia.funcion(datosSerie, input$func),
            "season" = tendencia.funcion(datosSerie, input$func, estacion = TRUE),
-           "smooth1" = mostrar.mensaje(mensaje = "Suavizado Holt Winter aditivo no implementado!"),
-           "smooth2" = mostrar.mensaje(mensaje = "Suavizado Holt Winter multiplicativo no implementado!"))
+           "smoothhw" = calcular.holtwinters(datosSerie))
   })
 
   calcular.modelo.func <- reactive({
@@ -251,26 +263,34 @@ server <- function(input, output) {
     switch(input$func,
            "lineal" = calcular.lineal(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
            "quadratic" = calcular.cuadratica(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
-           "cubic" = calcular.cubica(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)))
+           "cubic" = calcular.cubica(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
+           "gfour" = calcular.grado4(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
+           "gfive" = calcular.grado5(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)))
   })
 
   output$forecast <- renderPlot({
     req(input$file1)
     calcular.modelo()
-    calcular.modelo.func()
-    tendencia.opcion(datosSerie, "pronostico")
+    if((input$model == "trend") || (input$model == "season")) {
+      calcular.modelo.func()
+    }
+    modelar.opcion(datosSerie, modeloPron, "pronostico", input$model)
   })
   output$diagnosis <- renderPlot({
     req(input$file1)
     calcular.modelo()
-    calcular.modelo.func()
-    tendencia.opcion(datosSerie, "diagnostico")
+    if((input$model == "trend") || (input$model == "season")) {
+      calcular.modelo.func()
+    }
+    modelar.opcion(datosSerie, modeloPron, "diagnostico", input$model)
   })
   output$summary1 <- renderPrint({
     req(input$file1)
     calcular.modelo()
-    calcular.modelo.func()
-    tendencia.opcion(datosSerie, "resumen")
+    if((input$model == "trend") || (input$model == "season")) {
+      calcular.modelo.func()
+    }
+    modelar.opcion(datosSerie, modeloPron, "resumen", input$model)
   })
 
   # Presenta mensajes al usuario
@@ -341,14 +361,15 @@ calcular.boot <- function(x, r = 1000) {
 ### FUNCIONES PARA ANALISIS DE DATOS
 ######################################################################
 histograma <- function(datos, bloques = "Sturges") {
-  grafico <- hist(datos,
-                  probability = TRUE,
-                  breaks = bloques,
-                  col = "cornsilk2", #col = "#75AADB",
-                  border = "cornsilk4",
-                  main = "Histograma",
-                  xlab = "Cuantiles",
-                  ylab = "Densidad")
+  grafico <- list(hist(datos,
+                      probability = TRUE,
+                      breaks = bloques,
+                      col = "cornsilk2", #col = "#75AADB",
+                      border = "cornsilk4",
+                      main = "Histograma",
+                      xlab = "Cuantiles",
+                      ylab = "Densidad"),
+                  grid())
   return(grafico)
 }
 densidad.teorica <- function(datos, media, desv, muestra = 1000) {
@@ -376,16 +397,29 @@ densidad.leyenda <- function() {
          merge = FALSE)
 }
 densidad.acumulada <- function(datos) {
-  grafico <- plot(ecdf(datos),
-                  col = "black",
-                  main = "Densidad Acumulada Empírica")
+  grafico <- list(plot(ecdf(datos),
+                      col = "black",
+                      main = "Densidad Acumulada Empírica"),
+                  grid())
   return(grafico)
 }
 cuartil.cuartil <- function(datos) {
   retorno <- list(puntos = qqnorm(datos,
                                   xlab = "Cuantiles Teóricos",
                                   ylab = "Muestra"),
-                  linea = qqline(datos))
+                  linea = qqline(datos),
+                  grid())
+  return(retorno)
+}
+serie.tiempo <- function(datos) {
+  retorno <- list(plot(datos,
+                      col = "blue4",
+                      #pch = 22,
+                      type = "l",
+                      main = "Serie de tiempo",
+                      xlab = "Tiempo",
+                      ylab = "Valores"),
+                  grid())
   return(retorno)
 }
 generar.serie <- function(datos, inicio = "2000,1", frecuencia = 4) {
@@ -395,16 +429,6 @@ generar.serie <- function(datos, inicio = "2000,1", frecuencia = 4) {
   datosSerie <<- ts(datos,
                     start = c(inicio1,inicio2),
                     frequency = frecuencia)
-}
-serie.tiempo <- function(datos) {
-  retorno <- plot(datos,
-                  col = "blue4",
-                  #pch = 22,
-                  type = "l",
-                  main = "Serie de tiempo",
-                  xlab = "Tiempo",
-                  ylab = "Valores")
-  return(retorno)
 }
 
 
@@ -421,29 +445,19 @@ tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
   else if(funcion == "cubic") {
     calcular.cubica(datos, estacion)
   }
-  else {
-    return()
+  else if(funcion == "gfour") {
+    calcular.grado4(datos, estacion)
   }
-}
-tendencia.opcion <- function(datos, opcion) {
-  if(opcion == "pronostico") {
-    graficar.tendencia(datosSerie,
-                       modeloPron)
-  }
-  else if(opcion == "diagnostico") {
-    graficar.diagnostico(datosSerie,
-                         modeloPron)
-  }
-  else if(opcion == "resumen") {
-    resumir.diagnostico(modeloPron)
+  else if(funcion == "gfive") {
+    calcular.grado5(datos, estacion)
   }
   else {
     return()
   }
 }
-
-# FUNCIONES DE MODELADO DE BAJO NIVEL - PROCESAMIENTO TIPO FUNCIÓN
-
+calcular.estacion <- function(datos) {
+  seasonaldummy(datos)
+}
 calcular.lineal <- function(datos, estacion = FALSE) {
   tiempo <- seq(1:length(datos))
   if(estacion) {
@@ -456,7 +470,7 @@ calcular.lineal <- function(datos, estacion = FALSE) {
 }
 calcular.cuadratica <- function(datos, estacion = FALSE) {
   tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo*tiempo
+  tiempo2 <- tiempo^2
   if(estacion) {
     It <- calcular.estacion(datos)
     modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + It)
@@ -467,8 +481,8 @@ calcular.cuadratica <- function(datos, estacion = FALSE) {
 }
 calcular.cubica <- function(datos, estacion = FALSE) {
   tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo*tiempo
-  tiempo3 <- tiempo*tiempo*tiempo
+  tiempo2 <- tiempo^2
+  tiempo3 <- tiempo^3
   if(estacion) {
     It <- calcular.estacion(datos)
     modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + It)
@@ -477,12 +491,63 @@ calcular.cubica <- function(datos, estacion = FALSE) {
     modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3)
   }
 }
-calcular.estacion <- function(datos) {
-  seasonaldummy(datos)
+calcular.grado4 <- function(datos, estacion = FALSE) {
+  tiempo <- seq(1:length(datos))
+  tiempo2 <- tiempo^2
+  tiempo3 <- tiempo^3
+  tiempo4 <- tiempo^4
+  if(estacion) {
+    It <- calcular.estacion(datos)
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + It)
+  }
+  else {
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4)
+  }
+}
+calcular.grado5 <- function(datos, estacion = FALSE) {
+  tiempo <- seq(1:length(datos))
+  tiempo2 <- tiempo^2
+  tiempo3 <- tiempo^3
+  tiempo4 <- tiempo^4
+  tiempo5 <- tiempo^5
+  if(estacion) {
+    It <- calcular.estacion(datos)
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + tiempo5 + It)
+  }
+  else {
+    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + tiempo5)
+  }
+}
+calcular.holtwinters <- function(datos) {
+  modeloPron <<- HoltWinters(datos)
 }
 
 # FUNCIONES DE MODELADO DE BAJO NIVEL - PROCESAMIENTO GENERAL
+modelar.opcion <- function(datos, modelo, opcion, tipo) {
+  if(opcion == "pronostico") {
+    if(tipo == "smoothhw") {
+      graficar.hotlwinters(datos,
+                           modelo)
+    } else {
+      graficar.tendencia(datos,
+                         modelo)
+    }
+  }
+  else if(opcion == "diagnostico") {
+    if(tipo == "smoothhw") {
 
+    } else {
+      graficar.diagnostico(datos,
+                           modelo)
+    }
+  }
+  else if(opcion == "resumen") {
+    resumir.diagnostico(modelo)
+  }
+  else {
+    return()
+  }
+}
 graficar.tendencia <- function(datos, modelo) {
   tiempo <- seq(1:length(datos))
   list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
@@ -491,10 +556,21 @@ graficar.tendencia <- function(datos, modelo) {
                         c("Real","Pronostico"),
                         lwd = c(2, 2),
                         col = c('black','red'),
-                        bty = "n"))
+                        bty = "n"),
+       grid())
+}
+graficar.hotlwinters <- function(datos, modelo) {
+  # tiempo <- seq(1:length(datos))
+  list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
+       pron = lines(modelo$fitted[,1], col = "red", lwd = 2),
+       leyenda = legend("topleft",
+                        c("Real","Pronostico"),
+                        lwd = c(2, 2),
+                        col = c('black','red'),
+                        bty = "n"),
+       grid())
 }
 graficar.diagnostico <- function(datos, modelo) {
-  # options(repr.plot.width=10, repr.plot.height=6)
   tiempo <- seq(1:length(datos))
   residual = modelo$residuals
   list(tablero = par(mfrow=c(2,2)),
@@ -503,7 +579,8 @@ graficar.diagnostico <- function(datos, modelo) {
        densidad = plot(density(residual), xlab='x', main= 'Densidad residuales', col="red"),
        qpuntos = qqnorm(residual),
        qlinea = qqline(residual, col=2),
-       correl = acf(residual, ci.type="ma", 60))
+       correl = acf(residual, ci.type="ma", 60),
+       grid())
 }
 resumir.diagnostico <- function(modelo) {
   summary(modelo)
@@ -518,6 +595,6 @@ ejecutar <- function() {
 }
 
 
-#shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
 
 
