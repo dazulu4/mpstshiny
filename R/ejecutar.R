@@ -24,7 +24,7 @@ totales <<- list()
 estadisticos <<- list()
 
 ######################################################################
-### DEFINICIÓN DE INTERFAZ GRÁFICA
+### DEFINICIÓN DE INTERFAZ GRÁFICA SHINY
 ######################################################################
 ui <- fluidPage(theme = shinytheme("cerulean"),
                 #shinythemes::themeSelector(),
@@ -156,7 +156,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 )
 
 ######################################################################
-### DEFINICIÓN DE FUNCIONES LADO DEL SERVIDOR
+### DEFINICIÓN DE FUNCIONES SERVIDOR SHINY
 ######################################################################
 server <- function(input, output) {
 
@@ -174,6 +174,7 @@ server <- function(input, output) {
       return(datos)
     }
   })
+
   output$summary <- renderPrint({
     req(input$file1)
     calcular.totales(columna = input$column)
@@ -200,18 +201,21 @@ server <- function(input, output) {
     densidad.empirica(datosVec)
     densidad.leyenda()
   })
+
   output$ecdf <- renderPlot({
     req(input$file1)
     #Gráfico Densidad acumulada
     densidad.acumulada(datosVec)
   })
+
   output$qqplot <- renderPlot({
     req(input$file1)
-    #Gráfico 1.2: QQPlot
+    #Gráfico QQPlot
     qqplot <- cuartil.cuartil(datosVec)
     qqplot$puntos
     qqplot$linea
   })
+
   output$test <- renderPrint({
     req(input$file1)
     #Pruebas de normalidad
@@ -228,9 +232,10 @@ server <- function(input, output) {
                              "Shapiro-Wilk",
                              "Anderson-Darling"))
   })
+
   output$serie <- renderPlot({
     req(input$file1)
-    #Gráfico 1.3: Serie de tiempo
+    #Gráfico Serie de tiempo
     generar.serie(datosVec,
                   inicio = input$start,
                   frecuencia = input$frequency)
@@ -240,14 +245,18 @@ server <- function(input, output) {
 
   # MODELADO DE SERIES DE TIEMPO
 
-  observe({
-    if (input$model == "smoothhw") {
-      disable(selector = "[type=radio][name=func]")
-      runjs("$('[type=radio][name=func]').parent().parent().addClass('disabled').css('opacity', 0.5)")
-    } else {
-      enable(selector = "[type=radio][name=func]")
-      runjs("$('[type=radio][name=func]').parent().parent().addClass('enabled').css('opacity', 1)")
-    }
+  # observe({
+  #   if (input$model == "smoothhw") {
+  #     disable(selector = "[type=radio][name=func]")
+  #     runjs("$('[type=radio][name=func]').parent().parent().addClass('disabled').css('opacity', 0.5)")
+  #   } else {
+  #     enable(selector = "[type=radio][name=func]")
+  #     runjs("$('[type=radio][name=func]').parent().parent().addClass('enabled').css('opacity', 1)")
+  #   }
+  # })
+
+  observeEvent(input$model, {
+    toggleState(id = "func", condition = (input$model != "smoothhw"))
   })
 
   calcular.modelo <- reactive({
@@ -273,24 +282,32 @@ server <- function(input, output) {
     calcular.modelo()
     if((input$model == "trend") || (input$model == "season")) {
       calcular.modelo.func()
+      tendencia.opcion(datosSerie, modeloPron, "pronostico")
+    } else {
+      holtwinters.opcion(datosSerie, modeloPron, "pronostico")
     }
-    modelar.opcion(datosSerie, modeloPron, "pronostico", input$model)
   })
+
   output$diagnosis <- renderPlot({
     req(input$file1)
     calcular.modelo()
     if((input$model == "trend") || (input$model == "season")) {
       calcular.modelo.func()
+      tendencia.opcion(datosSerie, modeloPron, "diagnostico")
+    } else {
+      holtwinters.opcion(datosSerie, modeloPron, "diagnostico")
     }
-    modelar.opcion(datosSerie, modeloPron, "diagnostico", input$model)
   })
+
   output$summary1 <- renderPrint({
     req(input$file1)
     calcular.modelo()
     if((input$model == "trend") || (input$model == "season")) {
       calcular.modelo.func()
+      tendencia.opcion(datosSerie, modeloPron, "resumen")
+    } else {
+      holtwinters.opcion(datosSerie, modeloPron, "resumen")
     }
-    modelar.opcion(datosSerie, modeloPron, "resumen", input$model)
   })
 
   # Presenta mensajes al usuario
@@ -301,298 +318,13 @@ server <- function(input, output) {
 
 
 ######################################################################
-### FUNCIONES PARA CARGA DE ARCHIVOS
-######################################################################
-cargar.archivo <- function(archivo,
-                           encabezado = FALSE,
-                           separador = ',',
-                           comillas = '"') {
-  datos <<- read.csv(file = archivo,
-                     header = encabezado,
-                     sep = separador,
-                     quote = comillas,
-                     fill = TRUE)
-}
-calcular.totales <- function(columna = 1) {
-  total <- length(datos[,columna])
-  totalNA <- sum(is.na(datos[,columna]))
-  datos <<- na.omit(datos[,columna])
-  datosNN <- suppressWarnings(as.numeric(as.character(datos)))
-  totalNN <- sum(is.na(datosNN))
-  datos <<- na.omit(data.frame(datosNN))
-  totalNM <- length(datos[,columna])
-  totales <<- list("Cargados" = total,
-                   "Numéricos" = totalNM,
-                   "No numéricos" = totalNN,
-                   "Valores nulos" = totalNA)
-
-  datosVec <<- datos[,columna]
-  datos <<- data.frame(datosVec)
-}
-calcular.estadisticos <- function(columna = 1, tolerancia = 30, replicas = 1000) {
-  media <- round(mean(datos[,columna]), 2)
-  desv <- round(sd(datos[,columna]), 4)
-  minimo <- round(min(datos[,columna]), 2)
-  maximo <- round(max(datos[,columna]), 2)
-  bootstrap <- FALSE
-  if(length(datos[,columna]) < tolerancia) {
-    resultado <- calcular.boot(datos[,columna], replicas)
-    media <- round(resultado$media, 2)
-    desv <- round(resultado$desv, 2)
-    bootstrap <- TRUE
-  }
-  estadisticos <<- list(Media = media,
-                        "Desv. estándar" = desv,
-                        "Mínimo" = minimo,
-                        "Máximo" = maximo,
-                        Bootstrap = bootstrap)
-}
-calcular.media <- function(x, d) {
-  return(mean(x[d]))
-}
-calcular.boot <- function(x, r = 1000) {
-  resultado <- boot(x, statistic = calcular.media, R = r)
-  list(media = resultado$t0,
-       desv = sd(resultado$t[,1]))
-}
-
-
-######################################################################
-### FUNCIONES PARA ANALISIS DE DATOS
-######################################################################
-histograma <- function(datos, bloques = "Sturges") {
-  grafico <- list(hist(datos,
-                      probability = TRUE,
-                      breaks = bloques,
-                      col = "cornsilk2", #col = "#75AADB",
-                      border = "cornsilk4",
-                      main = "Histograma",
-                      xlab = "Cuantiles",
-                      ylab = "Densidad"),
-                  grid())
-  return(grafico)
-}
-densidad.teorica <- function(datos, media, desv, muestra = 1000) {
-  xt <- seq(from = min(datos), to = max(datos), length.out = muestra)
-  yt <- dnorm(xt, mean = media, sd = desv)
-  grafico <- lines(xt, yt, col = "cornflowerblue", lwd = 2)
-  return(grafico)
-}
-densidad.empirica <- function(datos) {
-  densidad <- density(datos)
-  grafico <- lines(densidad, col = "brown4", lwd = 2)
-  return(grafico)
-}
-densidad.leyenda <- function() {
-  legend(x = 'topright',
-         legend = c('Teórica', 'Empírica'),
-         fill = NULL,
-         col = c('cornflowerblue', 'brown4'),
-         border = "black",
-         bg = 'white',
-         lty = 'solid',
-         lwd = c(2, 2),
-         bty = "n",
-         horiz = FALSE,
-         merge = FALSE)
-}
-densidad.acumulada <- function(datos) {
-  grafico <- list(plot(ecdf(datos),
-                      col = "black",
-                      main = "Densidad Acumulada Empírica"),
-                  grid())
-  return(grafico)
-}
-cuartil.cuartil <- function(datos) {
-  retorno <- list(puntos = qqnorm(datos,
-                                  xlab = "Cuantiles Teóricos",
-                                  ylab = "Muestra"),
-                  linea = qqline(datos),
-                  grid())
-  return(retorno)
-}
-serie.tiempo <- function(datos) {
-  retorno <- list(plot(datos,
-                      col = "blue4",
-                      #pch = 22,
-                      type = "l",
-                      main = "Serie de tiempo",
-                      xlab = "Tiempo",
-                      ylab = "Valores"),
-                  grid())
-  return(retorno)
-}
-generar.serie <- function(datos, inicio = "2000,1", frecuencia = 4) {
-  inicio <- unlist(strsplit(inicio, ','))
-  inicio1 <- ifelse(test = is.na(inicio[1]), yes = 2000, no = as.integer(inicio[1]))
-  inicio2 <- ifelse(test = is.na(inicio[2]), yes = 1, no = as.integer(inicio[2]))
-  datosSerie <<- ts(datos,
-                    start = c(inicio1,inicio2),
-                    frequency = frecuencia)
-}
-
-
-######################################################################
-### FUNCIONES PARA MODELADO DE DATOS
-######################################################################
-tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
-  if(funcion == "lineal") {
-    calcular.lineal(datos, estacion)
-  }
-  else if(funcion == "quadratic") {
-    calcular.cuadratica(datos, estacion)
-  }
-  else if(funcion == "cubic") {
-    calcular.cubica(datos, estacion)
-  }
-  else if(funcion == "gfour") {
-    calcular.grado4(datos, estacion)
-  }
-  else if(funcion == "gfive") {
-    calcular.grado5(datos, estacion)
-  }
-  else {
-    return()
-  }
-}
-calcular.estacion <- function(datos) {
-  seasonaldummy(datos)
-}
-calcular.lineal <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo)
-  }
-}
-calcular.cuadratica <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2)
-  }
-}
-calcular.cubica <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  tiempo3 <- tiempo^3
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3)
-  }
-}
-calcular.grado4 <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  tiempo3 <- tiempo^3
-  tiempo4 <- tiempo^4
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4)
-  }
-}
-calcular.grado5 <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  tiempo3 <- tiempo^3
-  tiempo4 <- tiempo^4
-  tiempo5 <- tiempo^5
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + tiempo5 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + tiempo5)
-  }
-}
-calcular.holtwinters <- function(datos) {
-  modeloPron <<- HoltWinters(datos)
-}
-
-# FUNCIONES DE MODELADO DE BAJO NIVEL - PROCESAMIENTO GENERAL
-modelar.opcion <- function(datos, modelo, opcion, tipo) {
-  if(opcion == "pronostico") {
-    if(tipo == "smoothhw") {
-      graficar.hotlwinters(datos,
-                           modelo)
-    } else {
-      graficar.tendencia(datos,
-                         modelo)
-    }
-  }
-  else if(opcion == "diagnostico") {
-    if(tipo == "smoothhw") {
-
-    } else {
-      graficar.diagnostico(datos,
-                           modelo)
-    }
-  }
-  else if(opcion == "resumen") {
-    resumir.diagnostico(modelo)
-  }
-  else {
-    return()
-  }
-}
-graficar.tendencia <- function(datos, modelo) {
-  tiempo <- seq(1:length(datos))
-  list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
-       pron = lines(modelo$fitted.values, col = "red", lwd = 2),
-       leyenda = legend("topleft",
-                        c("Real","Pronostico"),
-                        lwd = c(2, 2),
-                        col = c('black','red'),
-                        bty = "n"),
-       grid())
-}
-graficar.hotlwinters <- function(datos, modelo) {
-  # tiempo <- seq(1:length(datos))
-  list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
-       pron = lines(modelo$fitted[,1], col = "red", lwd = 2),
-       leyenda = legend("topleft",
-                        c("Real","Pronostico"),
-                        lwd = c(2, 2),
-                        col = c('black','red'),
-                        bty = "n"),
-       grid())
-}
-graficar.diagnostico <- function(datos, modelo) {
-  tiempo <- seq(1:length(datos))
-  residual = modelo$residuals
-  list(tablero = par(mfrow=c(2,2)),
-       residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
-       rlinea = abline(h=0, lty=2),
-       densidad = plot(density(residual), xlab='x', main= 'Densidad residuales', col="red"),
-       qpuntos = qqnorm(residual),
-       qlinea = qqline(residual, col=2),
-       correl = acf(residual, ci.type="ma", 60),
-       grid())
-}
-resumir.diagnostico <- function(modelo) {
-  summary(modelo)
-}
-
-
-######################################################################
 ### DEFINICIÓN FUNCIÓN PARA EJECUTAR PROGRAMA
 ######################################################################
 ejecutar <- function() {
   runApp(shinyApp(ui = ui, server = server))
 }
+
+# ejecutar()
 
 shinyApp(ui = ui, server = server)
 
