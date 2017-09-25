@@ -242,11 +242,11 @@ server <- function(input, output) {
 
   observe({
     if (input$model == "smoothhw") {
-      shinyjs::disable(selector = "[type=radio][name=func]")
-      shinyjs::runjs("$('[type=radio][name=func]').parent().parent().addClass('disabled').css('opacity', 0.5)")
+      disable(selector = "[type=radio][name=func]")
+      runjs("$('[type=radio][name=func]').parent().parent().addClass('disabled').css('opacity', 0.5)")
     } else {
-      shinyjs::enable(selector = "[type=radio][name=func]")
-      shinyjs::runjs("$('[type=radio][name=func]').parent().parent().addClass('enabled').css('opacity', 1)")
+      enable(selector = "[type=radio][name=func]")
+      runjs("$('[type=radio][name=func]').parent().parent().addClass('enabled').css('opacity', 1)")
     }
   })
 
@@ -593,7 +593,6 @@ resumir.diagnostico <- function(modelo) {
 ejecutar <- function() {
   runApp(shinyApp(ui = ui, server = server))
 }
-
 
 shinyApp(ui = ui, server = server)
 
