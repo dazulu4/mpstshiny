@@ -1,11 +1,16 @@
 Package: mpstshiny
-Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
-Encoding: UTF-8
+Title: Modelado predictivo y series de tiempo
+Version: 1.0
+Date: 2017-09-24
+Author: Dennis Alexander Zuluaga <dazuluag@unal.edu.co>, Davinson Mosquera Gonzalez <davmosqueragon@unal.edu.co>, Pedro Turriago Sanchez  <pturriago@unal.edu.co>
+Maintainer: Denis Desarrollador <dazuluag@unal.edu.co>, Davinson Desarrollador <davmosqueragon@unal.edu.co>, Pedro Desarrollador <pturriago@unal.edu.co>
+Depends: R (>= 3.4.1), shiny, shinythemes, boot, moments, nortest, graphics, Cairo
+Imports: grDevices, graphics
+Enhances: FastRWeb
+Description: Paquete creado para hacer modelado predictivo con series de tiempo con funciones polinomiales hasta grado 5 (lineal, cuadrática, cúbica).
+License: MIT + file LICENSE
+Encoding: ISO-8859-1
 LazyData: true
+NeedsCompilation: yes
+Packaged: 2017-09-24 17:49:11 UTC; svnuser
+Archs: i386, x64

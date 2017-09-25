@@ -1,1 +1,3 @@
-exportPattern("^[[:alpha:]]+")
+exportPattern("^ejecutar")
+importFrom("graphics", "par")
+export("ejecutar")
