@@ -321,6 +321,7 @@ server <- function(input, output) {
 ### DEFINICIÓN FUNCIÓN PARA EJECUTAR PROGRAMA
 ######################################################################
 ejecutar <- function() {
+  useShinyjs()
   runApp(shinyApp(ui = ui, server = server))
 }
 
