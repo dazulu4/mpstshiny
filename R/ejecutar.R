@@ -194,12 +194,15 @@ server <- function(input, output) {
   output$normal <- renderPlot({
     req(input$file1)
     #Gráfico Histograma y Densidades
-    histograma(datosVec, input$bins)
-    densidad.teorica(datosVec,
+    generar.normales(datosVec,
+                     bloques = input$bins,
                      media = estadisticos[["Media"]],
                      desv = estadisticos[["Desv. estándar"]])
-    densidad.empirica(datosVec)
-    densidad.leyenda()
+    # densidad.teorica(datosVec,
+    #                  media = estadisticos[["Media"]],
+    #                  desv = estadisticos[["Desv. estándar"]])
+    # densidad.empirica(datosVec)
+    # densidad.leyenda()
   })
 
   output$ecdf <- renderPlot({
