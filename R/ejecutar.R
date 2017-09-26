@@ -9,25 +9,33 @@ library(moments)
 library(nortest)
 library(Cairo)
 library(forecast)
+library(DT)
 require(graphics)
+
+######################################################################
+### DEFINICIÓN DE VARIABLES CONSTANTES
+######################################################################
+decimales <<- 6
+dias <<- 365.28
+semanas <<- round(dias/7, 2)
+meses <<- 12.0
+trimestres <<- 4.0
+anios <<- 1.0
 
 ######################################################################
 ### DEFINICIÓN DE VARIABLES GLOBALES
 ######################################################################
 datos <<- list()
 datosVec <<- c()
-
+estadisticos <<- list()
 datosSerie <<- list()
 modeloPron <<- list()
-
-totales <<- list()
-estadisticos <<- list()
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA SHINY
 ######################################################################
 ui <- fluidPage(theme = shinytheme("cerulean"),
-                #shinythemes::themeSelector(),
+                shinythemes::themeSelector(),
                 navbarPage("R-MPST",
                            tabPanel("CARGAR",
                                     titlePanel("Carga tus Datos"),
@@ -40,7 +48,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                   accept = c("text/csv",
                                                              "text/comma-separated-values,text/plain",
                                                              ".csv")),
-                                        #tags$hr(),
+                                        tags$hr(),
                                         checkboxInput("header", "Encabezado", FALSE),
                                         radioButtons("sep", h4("Separador"),
                                                      choices = c(Coma = ",",
@@ -52,7 +60,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #                         "Comillas Dobles" = '"',
                                         #                         "Comillas Simples" = "'"),
                                         #             selected = '"'),
-                                        #tags$hr(),
+                                        tags$hr(),
                                         radioButtons("disp", h4("Muestra de Datos"),
                                                      choices = c(Encabezado = "head",
                                                                  "Completo" = "all"),
@@ -67,17 +75,20 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                     h4("Cantidad replicas bootstrap"),
                                                     value = 1000,
                                                     min = 500,
-                                                    max = 5000),
-                                        numericInput("column",
-                                                     label = h4("Columna del archivo"),
-                                                     value = 1)
+                                                    max = 5000)
+                                        #, numericInput("column",
+                                        #              label = h4("Columna del archivo"),
+                                        #              value = 1),
                                       ),
                                       mainPanel(
                                         # tabsetPanel(type = "tabs",
                                         #             tabPanel("Datos", tableOutput("contents")),
                                         #             tabPanel("Resumen", verbatimTextOutput('summary')))
-                                        column(4, wellPanel(h4("Contenido"), tableOutput("contents"))),
-                                        column(8, wellPanel(h4("Resumen"), verbatimTextOutput('summary')))
+                                        # column(4, wellPanel(h4("Contenido"), dataTableOutput("contents"))),
+                                        # column(8, wellPanel(h4("Resumen"), verbatimTextOutput('summary')))
+                                        wellPanel(h4("Contenido del Archivo"), dataTableOutput("contents")),
+                                        wellPanel(h4("Totales del Archivo"), tableOutput('summaryTotals')),
+                                        wellPanel(h4("Estadísticos de los Datos"), tableOutput('summaryStats'))
                                       )
 
                                     )
@@ -92,24 +103,36 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                     min = 1,
                                                     max = 100),
                                         tags$hr(),
-                                        textInput("start",
-                                                  label = h4("Inicio de la serie"),
-                                                  value = "2000,1"),
-                                        numericInput("frequency",
-                                                     label = h4("Frecuencia de la serie"),
-                                                     value = 4,
-                                                     min = 1,
-                                                     max = 365.25)
+                                        # textInput("start",
+                                        #           label = h4("Inicio de la serie"),
+                                        #           value = "2000,1"),
+                                        dateInput("start", h4("Inicio de la serie"),
+                                                  value = as.character(Sys.Date()),
+                                                  format = "yyyy-mm-dd",
+                                                  startview = "year",
+                                                  weekstart = 1),
+                                        span(textOutput("nodate"), style="color:red"),
+                                        # numericInput("frequency",
+                                        #              label = h4("Frecuencia de la serie"),
+                                        #              value = 4,
+                                        #              min = 1,
+                                        #              max = 365.25)
+                                        selectInput("frequency", h4("Frecuencia de la serie"),
+                                                    choices = c("Anual" = as.character(anios),
+                                                                "Trimestral" = as.character(trimestres),
+                                                                "Mensual" = as.character(meses),
+                                                                "Semanal" = as.character(semanas),
+                                                                "Diario" = as.character(dias)),
+                                                    selected = anios)
                                       ),
                                       mainPanel(
                                         tabsetPanel(type = "tabs",
-                                                    tabPanel("Densidad Normal",
-                                                             plotOutput("normal")),
-                                                    tabPanel("Densidad Acumulada", plotOutput("ecdf")),
-                                                    tabPanel("Pruebas Normalidad",
+                                                    tabPanel(h5("Densidad Normal"), plotOutput("normal")),
+                                                    tabPanel(h5("Densidad Acumulada"), plotOutput("ecdf")),
+                                                    tabPanel(h5("Pruebas Normalidad"),
                                                              plotOutput("qqplot"),
-                                                             verbatimTextOutput('test')),
-                                                    tabPanel("Serie Tiempo", plotOutput("serie"))
+                                                             wellPanel(h4("Otras Pruebas"), tableOutput("test"))),
+                                                    tabPanel(h5("Serie Tiempo"), plotOutput("serie"))
                                         )
                                       )
                                     )
@@ -121,8 +144,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         selectInput("model", h4("Selecciona el Modelo"),
                                                     choices = c("Tendencia Simple" = "trend",
                                                                 "Tendencia con Estacionalidad" = "season",
-                                                                "Suavizado Holt Winters" = "smoothhw")
-                                        ),
+                                                                "Suavizado Holt Winters" = "smoothhw")),
                                         tags$br(),
                                         useShinyjs(),
                                         radioButtons("func", h4("Selecciona la Función"),
@@ -158,35 +180,51 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 ######################################################################
 ### DEFINICIÓN DE FUNCIONES SERVIDOR SHINY
 ######################################################################
-server <- function(input, output) {
+server <- function(input, output, session) {
 
   # CARGA DE ARCHIVO
 
-  output$contents <- renderTable({
+  output$contents <- DT::renderDataTable({
     req(input$file1)
     cargar.archivo(archivo = input$file1$datapath,
                    encabezado = input$header,
                    separador = input$sep) #comillas = input$quote)
     if(input$disp == "head") {
-      return(head(datos))
+      nuevos.datos <- head(datos)
     }
     else {
-      return(datos)
+      nuevos.datos <- datos
     }
+    datatable(nuevos.datos,
+              options = list(pageLength = 5),
+              class = 'cell-border stripe',
+              rownames = FALSE,
+              style = "bootstrap")
   })
 
-  output$summary <- renderPrint({
+  output$summaryTotals <- renderTable({
     req(input$file1)
-    calcular.totales(columna = input$column)
-    calcular.estadisticos(columna = input$column,
-                          tolerancia = input$tolerance,
-                          replicas = input$bootstrap)
-    resultado <- list("Totales" = totales,
-                      "Estadísticos" = estadisticos)
-    str(sapply(sprintf('%s', names(resultado)), function(key) {
-      resultado[[key]]
-    }, simplify = FALSE))
-  })
+    data.frame(calcular.totales())
+  }, spacing = "m", striped = TRUE, digits = decimales)
+
+  output$summaryStats <- renderTable({
+    req(input$file1)
+    data.frame(calcular.estadisticos(tolerancia = input$tolerance,
+                                     replicas = input$bootstrap))
+  }, spacing = "m", striped = TRUE, digits = decimales)
+
+  # output$summary <- renderPrint({
+  #   req(input$file1)
+  #   calcular.totales() #columna = input$column)
+  #   calcular.estadisticos(#columna = input$column,
+  #                         tolerancia = input$tolerance,
+  #                         replicas = input$bootstrap)
+  #   resultado <- list("Totales" = totales,
+  #                     "Estadísticos" = estadisticos)
+  #   str(sapply(sprintf('%s', names(resultado)), function(key) {
+  #     resultado[[key]]
+  #   }, simplify = FALSE))
+  # })
 
 
   # ANALISIS DE DATOS
@@ -197,12 +235,7 @@ server <- function(input, output) {
     generar.normales(datosVec,
                      bloques = input$bins,
                      media = estadisticos[["Media"]],
-                     desv = estadisticos[["Desv. estándar"]])
-    # densidad.teorica(datosVec,
-    #                  media = estadisticos[["Media"]],
-    #                  desv = estadisticos[["Desv. estándar"]])
-    # densidad.empirica(datosVec)
-    # densidad.leyenda()
+                     desv = estadisticos[["Desv_Estandar"]])
   })
 
   output$ecdf <- renderPlot({
@@ -219,31 +252,51 @@ server <- function(input, output) {
     qqplot$linea
   })
 
-  output$test <- renderPrint({
+  output$test <- renderTable({
     req(input$file1)
     #Pruebas de normalidad
     jb <- jarque.test(datosVec)
     sw <- shapiro.test(datosVec)
     ad <- ad.test(datosVec)
-    data.frame("Estadístico" = c(jb$statistic,
-                                 sw$statistic,
-                                 ad$statistic),
-               "Valor-P" = c(jb$p.value,
-                             sw$p.value,
-                             ad$p.value),
+    data.frame(Estadistico = c(jb$statistic,
+                               sw$statistic,
+                               ad$statistic),
+               Valor_P = c(round(jb$p.value, decimales),
+                           round(sw$p.value, decimales),
+                           round(ad$p.value, decimales)),
                row.names = c("Jarque-Bera",
                              "Shapiro-Wilk",
                              "Anderson-Darling"))
-  })
+  }, rownames = TRUE, spacing = "m", striped = TRUE, digits = decimales)
 
   output$serie <- renderPlot({
     req(input$file1)
     #Gráfico Serie de tiempo
     generar.serie(datosVec,
-                  inicio = input$start,
-                  frecuencia = input$frequency)
+                  inicio = fecha.inicio(input$start),
+                  frecuencia = as.double(input$frequency))
     serie.tiempo(datosSerie)
   })
+
+  observeEvent(input$start, {
+    ifelse(!validar.fecha(input$start), Sys.Date(), input$start)
+  })
+
+  output$nodate <- renderText({
+    if(!validar.fecha(input$start)) {
+      "Ingrese una fecha valida!"
+    }
+  })
+
+  validar.fecha <- function(fecha = Sys.Date()) {
+    isTruthy(input$start)
+  }
+
+  fecha.inicio <- function(fecha = Sys.Date()) {
+    ifelse(!validar.fecha(fecha),
+           as.character(Sys.Date()),
+           as.character(fecha))
+  }
 
 
   # MODELADO DE SERIES DE TIEMPO
@@ -263,7 +316,7 @@ server <- function(input, output) {
   })
 
   calcular.modelo <- reactive({
-    generar.serie(datosVec, input$start, input$frequency);
+    generar.serie(datosVec, fecha.inicio(input$start), as.double(input$frequency));
     switch(input$model,
            "trend" = tendencia.funcion(datosSerie, input$func),
            "season" = tendencia.funcion(datosSerie, input$func, estacion = TRUE),
@@ -271,7 +324,7 @@ server <- function(input, output) {
   })
 
   calcular.modelo.func <- reactive({
-    generar.serie(datosVec, input$start, input$frequency);
+    generar.serie(datosVec, fecha.inicio(input$start), as.double(input$frequency));
     switch(input$func,
            "lineal" = calcular.lineal(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
            "quadratic" = calcular.cuadratica(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE)),
