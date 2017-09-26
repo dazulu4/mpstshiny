@@ -4,10 +4,8 @@
 generar.normales <- function(datos, bloques = "Sturges", media, desv, muestra = 1000) {
   xt <- seq(from = min(datos), to = max(datos), length.out = muestra)
   yt <- dnorm(xt, mean = media, sd = desv)
-  # lines(xt, yt, col = "cornflowerblue", lwd = 2)
 
   densidad <- density(datos)
-  # lines(densidad, col = "brown4", lwd = 2)
 
   grafico <- list(hist(datos,
                        probability = TRUE,
