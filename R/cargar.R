@@ -20,32 +20,34 @@ calcular.totales <- function(columna = 1) {
   totalNN <- sum(is.na(datosNN))
   datos <<- na.omit(data.frame(datosNN))
   totalNM <- length(datos[,columna])
-  totales <<- list("Cargados" = total,
-                   "Numéricos" = totalNM,
-                   "No numéricos" = totalNN,
-                   "Valores nulos" = totalNA)
+  totales <- list(Cargados = total,
+                  Numericos = totalNM,
+                  No_Numericos = totalNN,
+                  Valores_Nulos = totalNA)
 
   datosVec <<- datos[,columna]
   datos <<- data.frame(datosVec)
+  return(totales)
 }
 
 calcular.estadisticos <- function(columna = 1, tolerancia = 30, replicas = 1000) {
-  media <- round(mean(datos[,columna]), 2)
-  desv <- round(sd(datos[,columna]), 4)
-  minimo <- round(min(datos[,columna]), 2)
-  maximo <- round(max(datos[,columna]), 2)
+  media <- round(mean(datos[,columna]), decimales)
+  desv <- round(sd(datos[,columna]), decimales)
+  minimo <- round(min(datos[,columna]), decimales)
+  maximo <- round(max(datos[,columna]), decimales)
   bootstrap <- FALSE
   if(length(datos[,columna]) < tolerancia) {
     resultado <- calcular.boot(datos[,columna], replicas)
-    media <- round(resultado$media, 2)
-    desv <- round(resultado$desv, 2)
+    media <- round(resultado$media, decimales)
+    desv <- round(resultado$desv, decimales)
     bootstrap <- TRUE
   }
   estadisticos <<- list(Media = media,
-                        "Desv. estándar" = desv,
-                        "Mínimo" = minimo,
-                        "Máximo" = maximo,
-                        Bootstrap = bootstrap)
+                       Desv_Estandar = desv,
+                       Minimo = minimo,
+                       Maximo = maximo,
+                       Bootstrap = bootstrap)
+  return(estadisticos)
 }
 
 calcular.media <- function(x, d) {

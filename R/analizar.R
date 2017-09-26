@@ -88,11 +88,13 @@ serie.tiempo <- function(datos) {
   return(retorno)
 }
 
-generar.serie <- function(datos, inicio = "2000,1", frecuencia = 4) {
-  inicio <- unlist(strsplit(inicio, ','))
-  inicio1 <- ifelse(test = is.na(inicio[1]), yes = 2000, no = as.integer(inicio[1]))
-  inicio2 <- ifelse(test = is.na(inicio[2]), yes = 1, no = as.integer(inicio[2]))
+generar.serie <- function(datos, inicio, frecuencia = 1.0) {
+  inicio <- unlist(strsplit(inicio, '-'))
+  inicioVec <- c(as.integer(inicio[1]), as.integer(inicio[2]))
+  if(frecuencia >= dias) {
+    inicioVec <- c(inicioVec, as.integer(inicio[3]))
+  }
   datosSerie <<- ts(datos,
-                    start = c(inicio1,inicio2),
+                    start = inicioVec,
                     frequency = frecuencia)
 }
