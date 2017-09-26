@@ -1,7 +1,14 @@
 ######################################################################
 ### FUNCIONES PARA ANALISIS DE DATOS
 ######################################################################
-histograma <- function(datos, bloques = "Sturges") {
+generar.normales <- function(datos, bloques = "Sturges", media, desv, muestra = 1000) {
+  xt <- seq(from = min(datos), to = max(datos), length.out = muestra)
+  yt <- dnorm(xt, mean = media, sd = desv)
+  # lines(xt, yt, col = "cornflowerblue", lwd = 2)
+
+  densidad <- density(datos)
+  # lines(densidad, col = "brown4", lwd = 2)
+
   grafico <- list(hist(datos,
                        probability = TRUE,
                        breaks = bloques,
@@ -10,36 +17,49 @@ histograma <- function(datos, bloques = "Sturges") {
                        main = "Histograma",
                        xlab = "Cuantiles",
                        ylab = "Densidad"),
+                  lines(xt, yt, col = "cornflowerblue", lwd = 2),
+                  lines(xt, yt, col = "cornflowerblue", lwd = 2),
+                  legend(x = 'topright',
+                         legend = c('Teórica', 'Empírica'),
+                         fill = NULL,
+                         col = c('cornflowerblue', 'brown4'),
+                         border = "black",
+                         bg = 'white',
+                         lty = 'solid',
+                         lwd = c(2, 2),
+                         bty = "n",
+                         horiz = FALSE,
+                         merge = FALSE),
                   grid())
   return(grafico)
 }
 
-densidad.teorica <- function(datos, media, desv, muestra = 1000) {
-  xt <- seq(from = min(datos), to = max(datos), length.out = muestra)
-  yt <- dnorm(xt, mean = media, sd = desv)
-  grafico <- lines(xt, yt, col = "cornflowerblue", lwd = 2)
-  return(grafico)
-}
+# densidad.teorica <- function(datos, media, desv, muestra = 1000) {
+#   xt <- seq(from = min(datos), to = max(datos), length.out = muestra)
+#   yt <- dnorm(xt, mean = media, sd = desv)
+#   grafico <- lines(xt, yt, col = "cornflowerblue", lwd = 2)
+#   return(grafico)
+# }
+#
+# densidad.empirica <- function(datos) {
+#   densidad <- density(datos)
+#   grafico <- lines(densidad, col = "brown4", lwd = 2)
+#   return(grafico)
+# }
 
-densidad.empirica <- function(datos) {
-  densidad <- density(datos)
-  grafico <- lines(densidad, col = "brown4", lwd = 2)
-  return(grafico)
-}
-
-densidad.leyenda <- function() {
-  legend(x = 'topright',
-         legend = c('Teórica', 'Empírica'),
-         fill = NULL,
-         col = c('cornflowerblue', 'brown4'),
-         border = "black",
-         bg = 'white',
-         lty = 'solid',
-         lwd = c(2, 2),
-         bty = "n",
-         horiz = FALSE,
-         merge = FALSE)
-}
+# densidad.leyenda <- function() {
+#   legend(x = 'topright',
+#          legend = c('Teórica', 'Empírica'),
+#          fill = NULL,
+#          col = c('cornflowerblue', 'brown4'),
+#          border = "black",
+#          bg = 'white',
+#          lty = 'solid',
+#          lwd = c(2, 2),
+#          bty = "n",
+#          horiz = FALSE,
+#          merge = FALSE)
+# }
 
 densidad.acumulada <- function(datos) {
   grafico <- list(plot(ecdf(datos),
