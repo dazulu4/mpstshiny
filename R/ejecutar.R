@@ -30,7 +30,8 @@ anual <<- 1.0
 
 # Mensajes de usuario
 error.params.serie <- paste("La serie de tiempo no debe tener menos de 2 periodos.",
-                     "Por favor ajuste la frecuencia de la serie de tiempo.",
+                     "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
+                     "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
                      sep = " ")
 error.inicio.serie <- "¡Valor de inicio de la serie invalido!"
 
@@ -129,7 +130,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #              value = 4,
                                         #              min = 1,
                                         #              max = 365.25)
-                                        selectInput("frequency", h4("Frecuencia de la serie"),
+                                        radioButtons("frequency", h4("Frecuencia de la serie"),
                                                     choices = c("Anual" = as.character(anual),
                                                                 "Trimestral" = as.character(trimestral),
                                                                 "Mensual" = as.character(mensual),
@@ -143,7 +144,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                     tabPanel(h5("Densidad Acumulada"), plotOutput("ecdf")),
                                                     tabPanel(h5("Pruebas Normalidad"),
                                                              plotOutput("qqplot"),
-                                                             wellPanel(h4("Otras Pruebas"), tableOutput("test"))),
+                                                             wellPanel(h4("Pruebas de normalidad"), tableOutput("test"))),
                                                     tabPanel(h5("Serie Tiempo"), plotOutput("serie"))
                                         )
                                       )
@@ -175,7 +176,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #              selected = "inone")
                                         tags$hr(),
                                         sliderInput("ahead",
-                                                    h4("Tiempo hacia adelante"),
+                                                    h4("Registros a pronosticar"),
                                                     value = 50,
                                                     min = 20,
                                                     max = 100),
@@ -295,15 +296,13 @@ server <- function(input, output, session) {
   output$serie <- renderPlot({
     req(input$file1)
     #Gráfico Serie de tiempo
-    es.error.serie <- generar.serie(datosVec,
-                                    inicio = fecha.inicio(input$start),
-                                    frecuencia = as.double(input$frequency))
-    if(!es.error.serie) {
-      serie.tiempo(datosSerie)
-    } else {
+    serie.result <- generar.serie(datosVec,
+                                  inicio = fecha.inicio(input$start),
+                                  frecuencia = as.double(input$frequency))
+    if(!serie.result$es.decom) {
       mostrar.mensaje(titulo = "Advertencia!", mensaje = error.params.serie)
     }
-
+    serie.tiempo(datosSerie, serie.result$es.decom, serie.result$decom)
   })
 
   # Validación de parámetros de la serie de tiempo
@@ -357,51 +356,91 @@ server <- function(input, output, session) {
 
   output$forecast <- renderPlot({
     req(input$file1)
-    es.error.serie <- generar.serie(datosVec,
-                                    fecha.inicio(input$start),
-                                    as.double(input$frequency));
-    if(!es.error.serie) {
-      calcular.modelo()
-      if((input$model == "trend") || (input$model == "season")) {
-        calcular.modelo.func()
-        tendencia.opcion(datosSerie, modeloPron, "pronostico")
-      } else {
-        holtwinters.opcion(datosSerie, modeloPron, "pronostico")
-      }
-    }
+    # es.error.serie <- generar.serie(datosVec,
+    #                                 fecha.inicio(input$start),
+    #                                 as.double(input$frequency));
+    # if(!es.error.serie) {
+    #   calcular.modelo()
+    #   if((input$model == "trend") || (input$model == "season")) {
+    #     calcular.modelo.func()
+    #     tendencia.opcion(datosSerie, modeloPron, "pronostico")
+    #   } else {
+    #     holtwinters.opcion(datosSerie, modeloPron, "pronostico")
+    #   }
+    # }
+
+    generar.pron(input$model,
+                 "pronostico",
+                 input$start,
+                 input$frequency)
   })
 
   output$diagnosis <- renderPlot({
     req(input$file1)
-    es.error.serie <- generar.serie(datosVec,
-                                    fecha.inicio(input$start),
-                                    as.double(input$frequency));
-    if(!es.error.serie) {
-      calcular.modelo()
-      if((input$model == "trend") || (input$model == "season")) {
-        calcular.modelo.func()
-        tendencia.opcion(datosSerie, modeloPron, "diagnostico")
-      } else {
-        holtwinters.opcion(datosSerie, modeloPron, "diagnostico")
-      }
-    }
+    # es.error.serie <- generar.serie(datosVec,
+    #                                 fecha.inicio(input$start),
+    #                                 as.double(input$frequency));
+    # if(!es.error.serie) {
+    #   calcular.modelo()
+    #   if((input$model == "trend") || (input$model == "season")) {
+    #     calcular.modelo.func()
+    #     tendencia.opcion(datosSerie, modeloPron, "diagnostico")
+    #   } else {
+    #     holtwinters.opcion(datosSerie, modeloPron, "diagnostico")
+    #   }
+    # }
+
+    generar.pron(input$model,
+                 "diagnostico",
+                 input$start,
+                 input$frequency)
   })
 
   output$summary <- renderPrint({
     req(input$file1)
-    es.error.serie <- generar.serie(datosVec,
-                                    fecha.inicio(input$start),
-                                    as.double(input$frequency));
-    if(!es.error.serie) {
+    # es.error.serie <- generar.serie(datosVec,
+    #                                 fecha.inicio(input$start),
+    #                                 as.double(input$frequency));
+    # if(!es.error.serie) {
+    #   calcular.modelo()
+    #   if((input$model == "trend") || (input$model == "season")) {
+    #     calcular.modelo.func()
+    #     tendencia.opcion(datosSerie, modeloPron, "resumen")
+    #   } else {
+    #     holtwinters.opcion(datosSerie, modeloPron, "resumen")
+    #   }
+    # }
+
+    generar.pron(input$model,
+                 "resumen",
+                 input$start,
+                 input$frequency)
+  })
+
+  # Función general para pronóstico
+  generar.pron <- function(tipo, opcion, inicio, frecuencia) {
+    serie.result <- generar.serie(datosVec,
+                                  fecha.inicio(inicio),
+                                  as.double(frecuencia));
+    if(tipo == "trend") {
       calcular.modelo()
-      if((input$model == "trend") || (input$model == "season")) {
-        calcular.modelo.func()
-        tendencia.opcion(datosSerie, modeloPron, "resumen")
-      } else {
-        holtwinters.opcion(datosSerie, modeloPron, "resumen")
+      calcular.modelo.func()
+      return(tendencia.opcion(datosSerie, modeloPron, opcion))
+    }
+    else {
+      if(serie.result$es.decom) {
+        if(tipo == "season") {
+          calcular.modelo()
+          calcular.modelo.func()
+          return(tendencia.opcion(datosSerie, modeloPron, opcion))
+        }
+        else if(tipo == "smoothhw") {
+          calcular.modelo()
+          return(holtwinters.opcion(datosSerie, modeloPron, opcion))
+        }
       }
     }
-  })
+  }
 
   # Presenta mensajes al usuario
   mostrar.mensaje <- function(titulo = "Importante!", mensaje = "No implementado") {

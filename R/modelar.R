@@ -126,7 +126,7 @@ graficar.tendencia.hw <- function(datos, modelo) {
 }
 
 graficar.diagnostico.hw <- function(datos, modelo) {
-  return()
+  return("No se tienen funciones de diagnóstico para Holt Winters")
 }
 
 resumir.diagnostico.hw <- function(modelo) {

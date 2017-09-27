@@ -71,7 +71,7 @@ cuartil.cuartil <- function(datos) {
   return(retorno)
 }
 
-serie.tiempo <- function(datos) {
+serie.tiempo <- function(datos, es.decom = FALSE, decom = NULL) {
   # retorno <- list(plot(datos,
   #                      col = "blue4",
   #                      #pch = 22,
@@ -82,22 +82,26 @@ serie.tiempo <- function(datos) {
   #                 grid())
   # str(datos)
 
-  d <- decompose(datos)
-
-  serie <- autoplot(datos, ts.colour = "maroon", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle(paste("Serie de Tiempo", d$type, sep = " "))+
-    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
-    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
-  random <- autoplot(d$random, ts.colour = "red", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Errores")+
-    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
-    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
-  trend <- autoplot(d$trend, ts.colour = "green", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Tendencias")+
-    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
-    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
-  seasonal <- autoplot(d$seasonal, ts.colour = "blue", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Estacionalidad")+
-    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
-    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
-
-  retorno <- multiplot(serie, trend, random, seasonal, cols=2)
+  if(es.decom) {
+    dtype <- ifelse(decom$type == "additive", "Aditiva", "Multiplicativa")
+    serie <- autoplot(datos, ts.colour = "maroon", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle(paste("Serie de Tiempo", dtype, sep = " "))+
+      theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
+      theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
+    random <- autoplot(decom$random, ts.colour = "red", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Ruido")+
+      theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
+      theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
+    trend <- autoplot(decom$trend, ts.colour = "green", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Tendencias")+
+      theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
+      theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
+    seasonal <- autoplot(decom$seasonal, ts.colour = "blue", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Patrón Estacional")+
+      theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
+      theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
+    retorno <- multiplot(serie, trend, random, seasonal, cols=2)
+  } else {
+    retorno <- autoplot(datos, ts.colour = "maroon", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Serie de Tiempo")+
+      theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
+      theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
+  }
   return(retorno)
 }
 
@@ -123,11 +127,16 @@ generar.serie <- function(datos, inicio = as.character(Sys.Date()), frecuencia =
   datosSerie <<- ts(datos,
                     start = decimal_date(ymd(inicio)),
                     frequency = frecuencia)
-  error <- try(decompose(datosSerie))
-  if(inherits(error, "try-error")) {
-    datosSerie <<- list()
-    return(TRUE)
-  }
-  return(FALSE)
+  return(descomponer.serie(datosSerie))
 }
+
+descomponer.serie <- function(datos) {
+  datosDecom <- try(decompose(datos))
+  if(inherits(datosDecom, "try-error")) {
+    return(list(decom = NULL, es.decom = FALSE))
+  }
+  return(list(decom = datosDecom, es.decom = TRUE))
+}
+
+
 
