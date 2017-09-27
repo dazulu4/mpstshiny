@@ -133,4 +133,3 @@ resumir.diagnostico.hw <- function(modelo) {
   str(modelo)
 }
 
-

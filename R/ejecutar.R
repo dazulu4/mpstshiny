@@ -10,6 +10,10 @@ library(nortest)
 library(Cairo)
 library(forecast)
 library(DT)
+library(ggplot2)
+library(ggpubr)
+library(ggfortify)
+library(lubridate)
 require(graphics)
 
 ######################################################################
@@ -17,11 +21,12 @@ require(graphics)
 ######################################################################
 decimales <<- 6
 
-dias <<- 365.28
-semanas <<- round(dias/7, 2)
-meses <<- 12.0
-trimestres <<- 4.0
-anios <<- 1.0
+# Frecuencias series de tiempo
+diaria <<- 365.28
+semanal <<- round(diaria/7, 2)
+mensual <<- 12.0
+trimestral <<- 4.0
+anual <<- 1.0
 
 # Mensajes de usuario
 error.params.serie <- paste("La serie de tiempo no debe tener menos de 2 periodos.",
@@ -125,13 +130,12 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #              min = 1,
                                         #              max = 365.25)
                                         selectInput("frequency", h4("Frecuencia de la serie"),
-                                                    choices = c(#"Anual" = as.character(anios),
-                                                                "Trimestral" = as.character(trimestres),
-                                                                "Mensual" = as.character(meses),
-                                                                "Semanal" = as.character(semanas)
-                                                                #,"Diario" = as.character(dias)
-                                                                ),
-                                                    selected = as.character(meses))
+                                                    choices = c("Anual" = as.character(anual),
+                                                                "Trimestral" = as.character(trimestral),
+                                                                "Mensual" = as.character(mensual),
+                                                                "Semanal" = as.character(semanal),
+                                                                "Diario" = as.character(diaria)),
+                                                    selected = as.character(mensual))
                                       ),
                                       mainPanel(
                                         tabsetPanel(type = "tabs",
@@ -252,7 +256,8 @@ server <- function(input, output, session) {
   output$normal <- renderPlot({
     req(input$file1)
     #Gráfico Histograma y Densidades
-    generar.normales(datosVec,
+    generar.normales(datos,
+                     datosVec,
                      bloques = input$bins,
                      media = estadisticos[["Media"]],
                      desv = estadisticos[["Desv_Estandar"]])
@@ -261,15 +266,13 @@ server <- function(input, output, session) {
   output$ecdf <- renderPlot({
     req(input$file1)
     #Gráfico Densidad acumulada
-    densidad.acumulada(datosVec)
+    densidad.acumulada(datos,datosVec)
   })
 
   output$qqplot <- renderPlot({
     req(input$file1)
     #Gráfico QQPlot
-    qqplot <- cuartil.cuartil(datosVec)
-    qqplot$puntos
-    qqplot$linea
+    cuartil.cuartil(datosVec)
   })
 
   output$test <- renderTable({
@@ -298,7 +301,7 @@ server <- function(input, output, session) {
     if(!es.error.serie) {
       serie.tiempo(datosSerie)
     } else {
-      mostrar.mensaje(titulo = "Error!", mensaje = error.params.serie)
+      mostrar.mensaje(titulo = "Advertencia!", mensaje = error.params.serie)
     }
 
   })

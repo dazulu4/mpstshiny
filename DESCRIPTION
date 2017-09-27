@@ -1,10 +1,10 @@
 Package: mpstshiny
-Title: Modelado predictivo y series de tiempo
+Title: Modelado predictivo y series de tiempo en Shiny
 Version: 1.0
 Date: 2017-09-24
 Author: Dennis Alexander Zuluaga <dazuluag@unal.edu.co>, Davinson Mosquera Gonzalez <davmosqueragon@unal.edu.co>, Pedro Turriago Sanchez  <pturriago@unal.edu.co>
 Maintainer: Denis Desarrollador <dazuluag@unal.edu.co>, Davinson Desarrollador <davmosqueragon@unal.edu.co>, Pedro Desarrollador <pturriago@unal.edu.co>
-Depends: R (>= 3.4.1), shiny, shinythemes, shinyjs, boot, moments, nortest, graphics, Cairo, forecast, DT
+Depends: R (>= 3.4.1), shiny, shinythemes, shinyjs, boot, moments, nortest, graphics, Cairo, forecast, DT, ggplot2, ggpubr, ggfortify, grid
 Imports: grDevices, graphics
 Enhances: FastRWeb
 Description: Paquete creado para hacer modelado predictivo con series de tiempo con funciones polinomiales hasta grado 5 (lineal, cuadrática, cúbica).
