@@ -59,3 +59,4 @@ calcular.boot <- function(x, r = 1000) {
   list(media = resultado$t0,
        desv = sd(resultado$t[,1]))
 }
+

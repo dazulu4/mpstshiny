@@ -121,3 +121,4 @@ generar.serie <- function(datos, inicio, frecuencia = 1.0) {
   }
   return(FALSE)
 }
+

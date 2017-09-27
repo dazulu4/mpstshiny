@@ -1,0 +1,14 @@
+Los valores mensuales de The Southern Oscillation Index (SOI) durante el
+1950-1995. Esta serie consta de 540 observaciones sobre el SOI,
+calculado como la "diferencia de la salida del largo plazo
+las presiones mensuales de nivel medio del mar en Tahití en el Pacífico Sur
+y Darwin en el norte de Australia. El índice es una medida de la
+llamada "El Niño-Oscilación del Sur" - un evento de
+importancia e interés en los estudios climatológicos en las últimas décadas.
+El hecho de que la mayoría de las observaciones en la última parte de la serie
+valores negativos se relaciona con un calentamiento reciente en el
+Pacífico, y este patrón ha sido de gran interés en estudios recientes.
+Una cuestión clave de interés es determinar lo inusual que este evento
+es, y si se puede razonablemente explicar por el estándar "estacionario"
+modelos de series de tiempo, o requiere modelos que incluyan derivas / tendencias
+que pueden estar relacionados con el cambio climático global.

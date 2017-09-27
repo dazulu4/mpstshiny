@@ -16,6 +16,7 @@ require(graphics)
 ### DEFINICIÓN DE VARIABLES CONSTANTES
 ######################################################################
 decimales <<- 6
+
 dias <<- 365.28
 semanas <<- round(dias/7, 2)
 meses <<- 12.0
@@ -129,7 +130,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                                 "Mensual" = as.character(meses),
                                                                 "Semanal" = as.character(semanas),
                                                                 "Diario" = as.character(dias)),
-                                                    selected = meses)
+                                                    selected = as.character(meses))
                                       ),
                                       mainPanel(
                                         tabsetPanel(type = "tabs",
@@ -418,5 +419,4 @@ ejecutar <- function() {
 }
 
 # shinyApp(ui = ui, server = server)
-
 

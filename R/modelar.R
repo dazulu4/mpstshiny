@@ -132,3 +132,5 @@ graficar.diagnostico.hw <- function(datos, modelo) {
 resumir.diagnostico.hw <- function(modelo) {
   str(modelo)
 }
+
+
