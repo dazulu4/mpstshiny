@@ -125,11 +125,12 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #              min = 1,
                                         #              max = 365.25)
                                         selectInput("frequency", h4("Frecuencia de la serie"),
-                                                    choices = c("Anual" = as.character(anios),
+                                                    choices = c(#"Anual" = as.character(anios),
                                                                 "Trimestral" = as.character(trimestres),
                                                                 "Mensual" = as.character(meses),
-                                                                "Semanal" = as.character(semanas),
-                                                                "Diario" = as.character(dias)),
+                                                                "Semanal" = as.character(semanas)
+                                                                #,"Diario" = as.character(dias)
+                                                                ),
                                                     selected = as.character(meses))
                                       ),
                                       mainPanel(
@@ -418,5 +419,5 @@ ejecutar <- function() {
   runApp(shinyApp(ui = ui, server = server))
 }
 
-# shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
 
