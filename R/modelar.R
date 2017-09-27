@@ -5,19 +5,19 @@
 tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
   switch(funcion,
          lineal={
-           calcular.lineal(datos, estacion)
+           calcular.regresion(datos, estacion, 1)
          },
          quadratic={
-           calcular.cuadratica(datos, estacion)
+           calcular.regresion(datos, estacion, 2)
          },
          cubic={
-           calcular.cubica(datos, estacion)
+           calcular.regresion(datos, estacion, 3)
          },
          gfour={
-           calcular.grado4(datos, estacion)
+           calcular.regresion(datos, estacion, 4)
          },
          gfive={
-           calcular.grado5(datos, estacion)
+           calcular.regresion(datos, estacion, 5)
          },
          {
            return()
@@ -29,68 +29,20 @@ calcular.estacion <- function(datos) {
   seasonaldummy(datos)
 }
 
-calcular.lineal <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
+calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
+  longitud <- length(datos)
+  valores <- seq(1:longitud)
+  tiempo <- matrix(rep(0, longitud * grado), nrow = longitud, ncol = grado)
+  for(i in 1:grado) {
+    tiempo[,i] <- valores^i
+  }
+  # It = Variables indicadoras en función del tiempo
   if(estacion) {
     It <- calcular.estacion(datos)
     modeloPron <<- lm(formula = datos ~ tiempo + It)
   }
   else {
     modeloPron <<- lm(formula = datos ~ tiempo)
-  }
-}
-
-calcular.cuadratica <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2)
-  }
-}
-
-calcular.cubica <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  tiempo3 <- tiempo^3
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3)
-  }
-}
-
-calcular.grado4 <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  tiempo3 <- tiempo^3
-  tiempo4 <- tiempo^4
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4)
-  }
-}
-
-calcular.grado5 <- function(datos, estacion = FALSE) {
-  tiempo <- seq(1:length(datos))
-  tiempo2 <- tiempo^2
-  tiempo3 <- tiempo^3
-  tiempo4 <- tiempo^4
-  tiempo5 <- tiempo^5
-  if(estacion) {
-    It <- calcular.estacion(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + tiempo5 + It)
-  }
-  else {
-    modeloPron <<- lm(formula = datos ~ tiempo + tiempo2 + tiempo3 + tiempo4 + tiempo5)
   }
 }
 

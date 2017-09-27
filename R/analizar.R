@@ -90,14 +90,9 @@ serie.tiempo <- function(datos) {
 
 generar.serie <- function(datos, inicio, frecuencia = 1.0) {
   inicio <- unlist(strsplit(inicio, '-'))
-  print("=================================")
-  print(inicio)
-  print(frecuencia)
 
   if(anios == frecuencia) {
     inicioVec <- c(as.integer(inicio[1]))
-    print("anios")
-    print(inicioVec)
   } else if(trimestres == frecuencia) {
     if(as.integer(inicio[2]) %in% 1:3) {
       inicioVec <- c(as.integer(inicio[1]), 1)
@@ -109,23 +104,20 @@ generar.serie <- function(datos, inicio, frecuencia = 1.0) {
       #meses entre 10:12
       inicioVec <- c(as.integer(inicio[1]), 4)
     }
-    print("trimestres")
-    print(inicioVec)
   } else if(meses == frecuencia) {
     inicioVec <- c(as.integer(inicio[1]), as.integer(inicio[2]))
-    print("meses")
-    print(inicioVec)
   } else if(semanas == frecuencia) {
     inicioVec <- c(as.integer(inicio[1]), as.integer(inicio[2]), as.integer(inicio[3]))
-    print("semanas")
-    print(inicioVec)
   } else {
     inicioVec <- c(as.integer(inicio[1]), as.integer(inicio[2]), as.integer(inicio[3]))
-    print("dias")
-    print(inicioVec)
   }
-
   datosSerie <<- ts(datos,
                     start = inicioVec,
                     frequency = frecuencia)
+  error <- try(decompose(datosSerie))
+  if(inherits(error, "try-error")) {
+    datosSerie <<- list()
+    return(TRUE)
+  }
+  return(FALSE)
 }
