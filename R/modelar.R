@@ -231,6 +231,10 @@ graficar.diagnostico.arima <- function(datos, modelo) {
   tiempo <- seq(1:length(datos))
   residual = modelo$residuals
 
+  if(length(tiempo) != length(residual)) {
+    #### TODO: Optimizar -> A veces no ajusta bien la longitud de tiempo y residual
+    tiempo <- seq(1:length(residual))
+  }
   list(tablero = par(mfrow=c(2,2)),
        residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
        rlinea = abline(h=0, lty=2),
