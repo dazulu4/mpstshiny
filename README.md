@@ -8,3 +8,7 @@ Ejecute el siguiente comando en la consola de R o RStudio:
 ```r
 devtools::install_github("dazulu4/mpstshiny")
 ```
+
+# MIT License
+
+Copyright (c) 2017
