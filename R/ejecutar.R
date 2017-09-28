@@ -43,6 +43,7 @@ datosVec <<- c()
 estadisticos <<- list()
 datosSerie <<- list()
 modeloPron <<- list()
+resultPron <<- list()
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA SHINY
@@ -410,22 +411,22 @@ server <- function(input, output, session) {
     if(tipo == "trend") {
       calcular.modelo()
       calcular.modelo.func()
-      return(tendencia.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
+      return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
     }
     else {
       if(serie.result$es.decom) {
         if(tipo == "season") {
           calcular.modelo()
           calcular.modelo.func()
-          return(tendencia.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
+          return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
         }
         else if(tipo == "holtwinters") {
           calcular.modelo()
-          return(holtwinters.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
+          return(holtwinters.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
         }
         else if(tipo == "arima") {
           calcular.modelo()
-          return(arima.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
+          return(arima.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
         }
       }
     }

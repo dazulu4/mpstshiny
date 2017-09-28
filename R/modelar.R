@@ -8,10 +8,10 @@
 # INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN CON LOS
 # INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-tendencia.opcion <- function(datos, modelo, opcion, periodos = 20, nivel = 0.95) {
+tendencia.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel = 0.95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.tend(datos, modelo, periodos, nivel)
+           graficar.pronostico.tend(datos, modelo, pronostico, periodos, nivel)
          },
          diagnostico={
            graficar.diagnostico.tend(datos, modelo)
@@ -25,18 +25,12 @@ tendencia.opcion <- function(datos, modelo, opcion, periodos = 20, nivel = 0.95)
   )
 }
 
-graficar.pronostico.tend <- function(datos, modelo, periodos, nivel) {
-
-  print(periodos)
-  print(nivel)
-
+graficar.pronostico.tend <- function(datos, modelo, pronostico, periodos, nivel) {
   tiempo <- seq(1:length(datos))
 
-  #### TODO: Elaborar el pronóstico con forecast para el modelado
-  #### de regresión lineal y retornar los gráficos correspondientes
-
-  # pron <- forecast(modelo, h = periodos, level = nivel)
-  # print(pron)
+  #### TODO Se debe agregar la graficación del pronostico
+  #### el cual se encuentra guardado en la variable "pronostico"
+  #### calculado en la función calcular.regresion
 
   list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
        pron = lines(modelo$fitted.values, col = "red", lwd = 2),
@@ -51,7 +45,6 @@ graficar.pronostico.tend <- function(datos, modelo, periodos, nivel) {
 graficar.diagnostico.tend <- function(datos, modelo) {
   tiempo <- seq(1:length(datos))
   residual = modelo$residuals
-
   list(tablero = par(mfrow=c(2,2)),
        residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
        rlinea = abline(h=0, lty=2),
@@ -63,7 +56,8 @@ graficar.diagnostico.tend <- function(datos, modelo) {
 }
 
 resumir.diagnostico.tend <- function(modelo) {
-  summary(modelo)
+  list("Measures:" = accuracy(modelo),
+       "Summary:" = summary(modelo))
 }
 
 tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
@@ -104,6 +98,15 @@ calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
   else {
     modeloPron <<- lm(formula = datos ~ tiempo)
   }
+
+  #### TODO: Elaborar el pronóstico con forecast para el modelado
+  #### de regresión lineal y retornar los gráficos correspondientes
+  #### El resultado se debe guardar en la variable global resultPron
+
+  # resultPron <<- forecast(modelo, h = periodos, level = nivel)
+  # print(pron)
+
+  resultPron <<- NULL
 }
 
 ######################################################################
@@ -113,10 +116,10 @@ calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
 # MODELADO, LA INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN
 # CON LOS INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-holtwinters.opcion <- function(datos, modelo, opcion, periodos = 20, nivel = 0.95) {
+holtwinters.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel = 0.95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.hw(datos, modelo, periodos, nivel)
+           graficar.pronostico.hw(datos, modelo, pronostico, periodos, nivel)
          },
          diagnostico={
            graficar.diagnostico.hw(datos, modelo)
@@ -130,13 +133,11 @@ holtwinters.opcion <- function(datos, modelo, opcion, periodos = 20, nivel = 0.9
   )
 }
 
-graficar.pronostico.hw <- function(datos, modelo, periodos, nivel) {
+graficar.pronostico.hw <- function(datos, modelo, pronostico, periodos, nivel) {
 
-  print(periodos)
-  print(nivel)
-
-  #### TODO: Elaborar el pronóstico con forecast para el modelado
-  #### de Holt Winters y retornar los gráficos correspondientes
+  #### TODO Se debe agregar la graficación del pronostico
+  #### el cual se encuentra guardado en la variable "pronostico"
+  #### calculado en la función calcular.holtwinters
 
   list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
        pron = lines(modelo$fitted[,1], col = "red", lwd = 2),
@@ -163,11 +164,27 @@ graficar.diagnostico.hw <- function(datos, modelo) {
 }
 
 resumir.diagnostico.hw <- function(modelo) {
-  summary(modelo)
+  formula <- as.character(modelo$call)
+  summary <- data.frame(alpha = modelo$alpha[[1]],
+                        beta = modelo$beta[[1]],
+                        gamma = modelo$gamma[[1]],
+                        seasonal = modelo$seasonal,
+                        SSE = modelo$SSE,
+                        call = paste(formula[1], "(formula = ", formula[2], ")", sep = ""))
+  coefficients <- data.frame(values = modelo$coefficients)
+  list("Measures" = list(),#accuracy(modelo),
+       "Summary:" = summary,
+       "Coefficients:" = coefficients)
 }
 
 calcular.holtwinters <- function(datos) {
   modeloPron <<- HoltWinters(datos)
+
+  #### TODO: Elaborar el pronóstico con forecast para el modelado
+  #### de Holt Winters y retornar los gráficos correspondientes
+  #### El resultado se debe guardar en la variable global resultPron
+
+  resultPron <<- NULL
 }
 
 ######################################################################
@@ -177,10 +194,10 @@ calcular.holtwinters <- function(datos) {
 # MODELADO, LA INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN
 # CON LOS INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-arima.opcion <- function(datos, modelo, opcion, periodos = 20, nivel = 0.95) {
+arima.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel = 0.95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.arima(datos, modelo, periodos, nivel)
+           graficar.pronostico.arima(datos, modelo, pronostico, periodos, nivel)
          },
          diagnostico={
            graficar.diagnostico.arima(datos, modelo)
@@ -194,13 +211,11 @@ arima.opcion <- function(datos, modelo, opcion, periodos = 20, nivel = 0.95) {
   )
 }
 
-graficar.pronostico.arima <- function(datos, modelo, periodos, nivel) {
+graficar.pronostico.arima <- function(datos, modelo, pronostico, periodos, nivel) {
 
-  print(periodos)
-  print(nivel)
-
-  #### TODO: Elaborar el pronóstico con forecast para el modelado
-  #### de Auto ARIMA y retornar los gráficos correspondientes
+  #### TODO Se debe agregar la graficación del pronostico
+  #### el cual se encuentra guardado en la variable "pronostico"
+  #### calculado en la función calcular.arima
 
   list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
        pron = lines(modelo$fitted, col = "red", lwd = 2),
@@ -232,4 +247,10 @@ resumir.diagnostico.arima <- function(modelo) {
 
 calcular.arima <- function(datos) {
   modeloPron <<- auto.arima(datos)
+
+  #### TODO: Elaborar el pronóstico con forecast para el modelado
+  #### de Auto ARIMA y retornar los gráficos correspondientes
+  #### El resultado se debe guardar en la variable global resultPron
+
+  resultPron <<- NULL
 }
