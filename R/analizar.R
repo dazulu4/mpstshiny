@@ -1,6 +1,7 @@
 ######################################################################
 ### FUNCIONES PARA ANALISIS DE DATOS
 ######################################################################
+
 generar.normales <- function(datosO,datos, bloques = "Sturges", media, desv, muestra = 1000) {
   xt <- seq(from = min(datosO), to = max(datos), length.out = muestra)
   yt <- dnorm(xt, mean = media, sd = desv)

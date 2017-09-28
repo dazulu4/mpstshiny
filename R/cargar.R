@@ -1,6 +1,7 @@
 ######################################################################
 ### FUNCIONES PARA CARGA DE ARCHIVOS
 ######################################################################
+
 cargar.archivo <- function(archivo,
                            encabezado = FALSE,
                            separador = ',',

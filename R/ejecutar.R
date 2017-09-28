@@ -155,9 +155,10 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                     sidebarLayout(
                                       sidebarPanel(
                                         selectInput("model", h4("Selecciona el modelo"),
-                                                    choices = c("Tendencia Simple" = "trend",
-                                                                "Tendencia con Estacionalidad" = "season",
-                                                                "Suavizado Holt Winters" = "smoothhw")),
+                                                    choices = c("Tendencias Simple" = "trend",
+                                                                "Tendencias Estacionales" = "season",
+                                                                "Suavizado HoltWinters" = "holtwinters",
+                                                                "Modelado ARIMA" = "arima")),
                                         # tags$br(),
                                         useShinyjs(),
                                         selectInput("func", h4("Selecciona la función"),
@@ -176,12 +177,12 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #              selected = "inone")
                                         tags$hr(),
                                         sliderInput("ahead",
-                                                    h4("Registros a pronosticar"),
+                                                    h4("Periodos para pronóstico"),
                                                     value = 50,
                                                     min = 20,
                                                     max = 100),
                                         sliderInput("confidence",
-                                                    h4("Confianza del pronóstico"),
+                                                    h4("Nivel de confianza"),
                                                     value = 0.95,
                                                     min = 0.85,
                                                     max = 0.99,
@@ -237,19 +238,6 @@ server <- function(input, output, session) {
     data.frame(calcular.estadisticos(tolerancia = input$tolerance,
                                      replicas = input$bootstrap))
   }, spacing = "m", striped = TRUE, digits = decimales)
-
-  # output$summary <- renderPrint({
-  #   req(input$file1)
-  #   calcular.totales() #columna = input$column)
-  #   calcular.estadisticos(#columna = input$column,
-  #                         tolerancia = input$tolerance,
-  #                         replicas = input$bootstrap)
-  #   resultado <- list("Totales" = totales,
-  #                     "Estadísticos" = estadisticos)
-  #   str(sapply(sprintf('%s', names(resultado)), function(key) {
-  #     resultado[[key]]
-  #   }, simplify = FALSE))
-  # })
 
 
   # ANALISIS DE DATOS
@@ -324,25 +312,16 @@ server <- function(input, output, session) {
 
   # MODELADO DE SERIES DE TIEMPO
 
-  # observe({
-  #   if (input$model == "smoothhw") {
-  #     disable(selector = "[type=radio][name=func]")
-  #     runjs("$('[type=radio][name=func]').parent().parent().addClass('disabled').css('opacity', 0.5)")
-  #   } else {
-  #     enable(selector = "[type=radio][name=func]")
-  #     runjs("$('[type=radio][name=func]').parent().parent().addClass('enabled').css('opacity', 1)")
-  #   }
-  # })
-
   observeEvent(input$model, {
-    toggleState(id = "func", condition = (input$model != "smoothhw"))
+    toggleState(id = "func", condition = (input$model == "trend" || input$model == "season"))
   })
 
   calcular.modelo <- reactive({
     switch(input$model,
            "trend" = tendencia.funcion(datosSerie, input$func),
            "season" = tendencia.funcion(datosSerie, input$func, estacion = TRUE),
-           "smoothhw" = calcular.holtwinters(datosSerie))
+           "holtwinters" = calcular.holtwinters(datosSerie),
+           "arima" = calcular.arima(datosSerie))
   })
 
   calcular.modelo.func <- reactive({
@@ -372,7 +351,9 @@ server <- function(input, output, session) {
     generar.pron(input$model,
                  "pronostico",
                  input$start,
-                 input$frequency)
+                 input$frequency,
+                 input$ahead,
+                 input$confidence)
   })
 
   output$diagnosis <- renderPlot({
@@ -393,7 +374,9 @@ server <- function(input, output, session) {
     generar.pron(input$model,
                  "diagnostico",
                  input$start,
-                 input$frequency)
+                 input$frequency,
+                 input$ahead,
+                 input$confidence)
   })
 
   output$summary <- renderPrint({
@@ -414,29 +397,35 @@ server <- function(input, output, session) {
     generar.pron(input$model,
                  "resumen",
                  input$start,
-                 input$frequency)
+                 input$frequency,
+                 input$ahead,
+                 input$confidence)
   })
 
   # Función general para pronóstico
-  generar.pron <- function(tipo, opcion, inicio, frecuencia) {
+  generar.pron <- function(tipo, opcion, inicio, frecuencia, periodos = 20, nivel = 0.95) {
     serie.result <- generar.serie(datosVec,
                                   fecha.inicio(inicio),
                                   as.double(frecuencia));
     if(tipo == "trend") {
       calcular.modelo()
       calcular.modelo.func()
-      return(tendencia.opcion(datosSerie, modeloPron, opcion))
+      return(tendencia.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
     }
     else {
       if(serie.result$es.decom) {
         if(tipo == "season") {
           calcular.modelo()
           calcular.modelo.func()
-          return(tendencia.opcion(datosSerie, modeloPron, opcion))
+          return(tendencia.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
         }
-        else if(tipo == "smoothhw") {
+        else if(tipo == "holtwinters") {
           calcular.modelo()
-          return(holtwinters.opcion(datosSerie, modeloPron, opcion))
+          return(holtwinters.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
+        }
+        else if(tipo == "arima") {
+          calcular.modelo()
+          return(arima.opcion(datosSerie, modeloPron, opcion, periodos, nivel))
         }
       }
     }
@@ -461,5 +450,5 @@ ejecutar <- function() {
   runApp(shinyApp(ui = ui, server = server))
 }
 
-shinyApp(ui = ui, server = server)
+# shinyApp(ui = ui, server = server)
 
