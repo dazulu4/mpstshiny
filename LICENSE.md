@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2017 Alexander Zuluaga
+Copyright (c) 2017 Alexander Zuluaga, Davinson Mosquera, Pedro Turriago
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
