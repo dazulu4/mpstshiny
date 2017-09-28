@@ -19,7 +19,6 @@ require(graphics)
 ######################################################################
 ### DEFINICIÓN DE VARIABLES CONSTANTES
 ######################################################################
-decimales <<- 6
 
 # Frecuencias series de tiempo
 diaria <<- 365.28
@@ -447,6 +446,7 @@ server <- function(input, output, session) {
 ### DEFINICIÓN FUNCIÓN PARA EJECUTAR PROGRAMA
 ######################################################################
 ejecutar <- function() {
+  decimales <<- 6
   useShinyjs()
   runApp(shinyApp(ui = ui, server = server))
 }
