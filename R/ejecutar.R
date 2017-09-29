@@ -16,24 +16,6 @@ library(ggfortify)
 library(lubridate)
 require(graphics)
 
-######################################################################
-### DEFINICIÓN DE VARIABLES CONSTANTES
-######################################################################
-
-# Frecuencias series de tiempo
-diaria <<- 365.28
-semanal <<- round(diaria/7, 2)
-mensual <<- 12.0
-trimestral <<- 4.0
-anual <<- 1.0
-
-# Mensajes de usuario
-error.params.serie <- paste("La serie de tiempo no debe tener menos de 2 periodos.",
-                            "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
-                            "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
-                            sep = " ")
-error.inicio.serie <- "¡Valor de inicio de la serie invalido!"
-
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA SHINY
@@ -570,6 +552,20 @@ ejecutar <- function() {
   modeloPron <<- list()
   resultPron <<- list()
   decimales <<- 6
+
+  # Frecuencias series de tiempo
+  diaria <<- 365.28
+  semanal <<- round(diaria/7, 2)
+  mensual <<- 12.0
+  trimestral <<- 4.0
+  anual <<- 1.0
+
+  # Mensajes de usuario
+  error.params.serie <<- paste("La serie de tiempo no debe tener menos de 2 periodos.",
+                               "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
+                               "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
+                               sep = " ")
+  error.inicio.serie <<- "¡Valor de inicio de la serie invalido!"
 
   useShinyjs()
   runApp(shinyApp(ui = ui, server = server))

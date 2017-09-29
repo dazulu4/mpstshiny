@@ -42,8 +42,11 @@ cuartil.cuartil <- function(datos) {
 
 serie.tiempo <- function(datos, es.decom = FALSE, decom = NULL) {
   if(es.decom) {
-    dtype <- ifelse(decom$type == "additive", "Aditiva", "Multiplicativa")
-    serie <- autoplot(datos, ts.colour = "maroon", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle(paste("Serie de Tiempo", dtype, sep = " "))+
+    print(decom$type)
+    # dtype <- ifelse(decom$type == "additive", "Aditiva", "Multiplicativa")
+    dtype <- ""
+    titulo <- paste("Serie de Tiempo", dtype, sep = " ")
+    serie <- autoplot(datos, ts.colour = "maroon", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle(titulo)+
       theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=15, hjust=0.5)) +
       theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=11))
     random <- autoplot(decom$random, ts.colour = "red", ts.linetype = 'solid')+labs( x="Tiempo", y="Valores")+ggtitle("Ruido")+

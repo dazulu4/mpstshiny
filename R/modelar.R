@@ -63,51 +63,57 @@ graficar.pronostico.tend <- function(datos, modelo, pronostico, periodos) {
 }
 
 graficar.diagnostico.tend <- function(datos, modelo) {
-  tiempo <- seq(1:length(datos))
-  residual = modelo$residuals
+  # list(tablero = par(mfrow=c(2,2)),
+  #      residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
+  #      rlinea = abline(h=0, lty=2),
+  #      densidad = plot(density(residual), xlab='x', main= 'Densidad residuales', col="red"),
+  #      qpuntos = qqnorm(residual),
+  #      qlinea = qqline(residual, col=2),
+  #      correl = acf(residual, ci.type="ma", 60),
+  #      grid())
 
-  list(tablero = par(mfrow=c(2,2)),
-       residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
-       rlinea = abline(h=0, lty=2),
-       densidad = plot(density(residual), xlab='x', main= 'Densidad residuales', col="red"),
-       qpuntos = qqnorm(residual),
-       qlinea = qqline(residual, col=2),
-       correl = acf(residual, ci.type="ma", 60),
-       grid())
-  # size_fonts.x <- 18
-  # size_fonts.y <- 12
-  #
-  # gresidual <- ggplot(modelo, aes(x=tiempo, y=residual), type = "dashed") + geom_smooth(method = "lm", formula = modelo$call[[2]], se = FALSE, color = "lightgrey")
-  # # gresidual <- gresidual + geom_segment(aes(xend = tiempo, yend = modelo$model$datos), alpha = .2)
-  # gresidual <- gresidual + geom_point(aes(color = residual))
-  # gresidual <- gresidual + scale_color_gradient2(low = "blue", mid = "white", high = "red")
-  # # gresidual <- gresidual + guides(color = FALSE)
-  # # gresidual <- gresidual + geom_point(aes(y = modelo$model$datos), shape = 1)
-  # gresidual <- gresidual +labs( x="Tiempo", y="")+ggtitle("Residuales")
-  # gresidual <- gresidual + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
-  # gresidual <- gresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+  # d <- data.frame(tiempo=seq(1:length(datos)), datos = modelo$model$datos, residuo = residuals(modelo))
+  d <- data.frame(tiempo=seq(1:length(datos)), residuo = residuals(modelo))
+  size_fonts.x <- 18
+  size_fonts.y <- 12
 
-  # gqpuntos <- ggqqplot(residual, xlab = "Cuantiles Teóricos", ylab = "Muestra", color = "blue", ggtheme=theme_gray(),)+ggtitle("Normal Q-Q Plot")
-  # gqpuntos <- gqpuntos + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
-  # gqpuntos <- gqpuntos + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+  ####Residuales##############
+  gresidual <- ggplot(d, aes(x=tiempo, y=residuo), type = "dashed")  +geom_smooth(method = "lm", se = FALSE, color = "lightgrey")
+  # gresidual <- gresidual + geom_segment(aes(xend = tiempo, yend = modelo$model$datos), alpha = .2)
+  gresidual <- gresidual + geom_point(aes(color = residuo))
+  gresidual <- gresidual + scale_color_gradient2(low = "blue", mid = "white", high = "red")
+  # gresidual <- gresidual + guides(color = FALSE)
+  # gresidual <- gresidual + geom_point(aes(y = modelo$model$datos), shape = 1)
+  gresidual <- gresidual +labs( x="Tiempo", y="")+ggtitle("Residuales")
+  gresidual <- gresidual + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  gresidual <- gresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
 
-  # gdresidual <- ggplot(modelo, aes(x=residual)) + geom_density(fill="blue", colour=NA, alpha=.2) +   geom_line(stat = "density")
-  # gdresidual <- gdresidual + expand_limits(y = 0) + ggtitle("Densidad de residuales") + theme(plot.title = element_text(hjust = 0.5))
-  # gdresidual <- gdresidual + xlab("Residual") + ylab("Densidad")
-  # gdresidual <- gdresidual + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
-  # gdresidual <- gdresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
-  #
-  # bacf <- acf(residual, ci.type="ma", 60)
-  # bacfdf <- with(bacf, data.frame(lag, acf))
-  # ci2 = qnorm((1 + .95)/2)/sqrt(length(rnorm(bacf$acf)))
-  #
-  # gcorrel <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) + geom_hline(aes(yintercept = 0))
-  # gcorrel <- gcorrel +  geom_segment(mapping = aes(xend = lag, yend = 0))
-  # gcorrel <- gcorrel + geom_hline(yintercept = c(ci2, -ci2), color = "purple", linetype = "dashed")+ggtitle("Series Residual")
-  # gcorrel <- gcorrel +  theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
-  # gcorrel <- gcorrel +  theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+  ######Normal Q-Q plot
+  # print(d$tiempo)
+  gqqplot<- ggqqplot(d$residuo, xlab = "Cuantiles Teóricos", ylab = "Muestra", color = "blue", ggtheme=theme_gray())+ggtitle("Normal Q-Q Plot")+
+    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=26, hjust=0.5)) +
+    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=22))
 
-  # multiplot(gresidual, gqpuntos, gdresidual, gcorrel, cols = 2)
+  ######Densidad Residual
+  gdresidual <- ggplot(d, aes(x=residuo)) + geom_density(fill="blue", colour=NA, alpha=.2) +   geom_line(stat = "density")
+  gdresidual <-  gdresidual +  expand_limits(y = 0) + ggtitle("Densidad de residuales") + theme(plot.title = element_text(hjust = 0.5))
+  gdresidual <-  gdresidual +  xlab("Residual") + ylab("Densidad")
+  gdresidual <-  gdresidual + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  gdresidual <-  gdresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+
+  ######Correlacion Residual
+  bacf <- acf(d$residuo, ci.type="ma", 60)
+  str(bacf$type)
+  bacfdf <- with(bacf, data.frame(lag, acf))
+  ci2 = qnorm((1 + .95)/2)/sqrt(length(rnorm(bacf$acf)))
+
+  gcorrel <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) + geom_hline(aes(yintercept = 0))
+  gcorrel <- gcorrel +  geom_segment(mapping = aes(xend = lag, yend = 0))
+  gcorrel <- gcorrel + geom_hline(yintercept = c(ci2, -ci2), color = "purple", linetype = "dashed")+ggtitle("Series Residual")
+  gcorrel <- gcorrel +  theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  gcorrel <- gcorrel +  theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+
+  multiplot(gresidual, gqqplot, gdresidual, gcorrel, cols = 2)
 }
 
 resumir1.diagnostico.tend <- function(modelo) {
