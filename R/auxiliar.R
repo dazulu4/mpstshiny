@@ -1,0 +1,160 @@
+calcular.regresion.1 <- function(datos, estacion, tiempos, periodos) {
+  tiempo1 <- tiempos
+  It <- calcular.estacion(datos)
+  modelo <- NULL
+  nd.df <- NULL
+  nd.1 <- seq(from = (length(tiempo1) + 1),
+              by = 1,
+              length.out = periodos)
+  # nd.c <- calcular.ciclo.inicial(datos, periodos, It)
+  if(!estacion) {
+    modelo <- lm(formula = datos ~ tiempo1)
+    nd.df <- data.frame(tiempo1 = nd.1)
+  } else {
+    modelo <- lm(formula = datos ~ tiempo1 + It)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        It = It[1:periodos,])
+  }
+  return(list(modelo = modelo,
+              nuevo = nd.df))
+}
+calcular.regresion.2 <- function(datos, estacion, tiempos, periodos) {
+  tiempo1 <- tiempos
+  tiempo2 <- tiempos^2
+  It <- calcular.estacion(datos)
+  modelo <- NULL
+  nd.df <- NULL
+  nd.1 <- seq(from = (length(tiempo1) + 1),
+              by = 1,
+              length.out = periodos)
+  # nd.c <- calcular.ciclo.inicial(datos, periodos, It)
+  if(!estacion) {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2))
+  } else {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + It)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        It = It[1:periodos,])
+  }
+  return(list(modelo = modelo,
+              nuevo = nd.df))
+}
+calcular.regresion.3 <- function(datos, estacion, tiempos, periodos) {
+  tiempo1 <- tiempos
+  tiempo2 <- tiempos^2
+  tiempo3 <- tiempos^3
+  It <- calcular.estacion(datos)
+  modelo <- NULL
+  nd.df <- NULL
+  nd.1 <- seq(from = (length(tiempo1) + 1),
+              by = 1,
+              length.out = periodos)
+  # nd.c <- calcular.ciclo.inicial(datos, periodos, It)
+  if(!estacion) {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + tiempo3)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        tiempo3 = (nd.1^3))
+  } else {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + tiempo3 + It)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        tiempo3 = (nd.1^3),
+                        It = It[1:periodos,])
+  }
+  return(list(modelo = modelo,
+              nuevo = nd.df))
+}
+calcular.regresion.4 <- function(datos, estacion, tiempos, periodos) {
+  tiempo1 <- tiempos
+  tiempo2 <- tiempos^2
+  tiempo3 <- tiempos^3
+  tiempo4 <- tiempos^4
+  It <- calcular.estacion(datos)
+  modelo <- NULL
+  nd.df <- NULL
+  nd.1 <- seq(from = (length(tiempo1) + 1),
+              by = 1,
+              length.out = periodos)
+  # nd.c <- calcular.ciclo.inicial(datos, periodos, It)
+  if(!estacion) {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + tiempo3 + tiempo4)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        tiempo3 = (nd.1^3),
+                        tiempo4 = (nd.1^4))
+  } else {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + tiempo3 + tiempo4 + It)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        tiempo3 = (nd.1^3),
+                        tiempo4 = (nd.1^4),
+                        It = It[1:periodos,])
+  }
+  return(list(modelo = modelo,
+              nuevo = nd.df))
+}
+calcular.regresion.5 <- function(datos, estacion, tiempos, periodos) {
+  tiempo1 <- tiempos
+  tiempo2 <- tiempos^2
+  tiempo3 <- tiempos^3
+  tiempo4 <- tiempos^4
+  tiempo5 <- tiempos^5
+  It <- calcular.estacion(datos)
+  modelo <- NULL
+  nd.df <- NULL
+  nd.1 <- seq(from = (length(tiempo1) + 1),
+              by = 1,
+              length.out = periodos)
+  # nd.c <- calcular.ciclo.inicial(datos, periodos, It)
+  if(!estacion) {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + tiempo3 + tiempo4 + tiempo5)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        tiempo3 = (nd.1^3),
+                        tiempo4 = (nd.1^4),
+                        tiempo5 = (nd.1^5))
+  } else {
+    modelo <- lm(formula = datos ~ tiempo1 + tiempo2 + tiempo3 + tiempo4 + tiempo5 + It)
+    nd.df <- data.frame(tiempo1 = nd.1,
+                        tiempo2 = (nd.1^2),
+                        tiempo3 = (nd.1^3),
+                        tiempo4 = (nd.1^4),
+                        tiempo5 = (nd.1^5),
+                        It = It[1:periodos,])
+  }
+  return(list(modelo = modelo,
+              nuevo = nd.df))
+}
+
+calcular.estacion <- function(datos) {
+  seasonaldummy(datos)
+}
+
+# calcular.ciclo <- function(datos, periodos, It) {
+#   reps <- periodos / 10
+#   It.reps <- It[1:frequency(datos)]
+#   It.return <- It.reps
+#   for(i in 1:reps) {
+#     if(length(It.reps) > periodos) {
+#       It.return <- It.reps[1:periodos,]
+#       break
+#     } else {
+#       It.reps <- rep(It.reps[])
+#     }
+#   }
+# }
+
+# calcular.ciclo.inicial <- function(datos, periodos, It) {
+#   f <- frequency(datos)
+#   m <- max(cycle(datos))
+#   r <- f[[1]] - m[[1]]
+#   x <- ifelse(r <= 0, 1, m + 1)
+#   print(list(freq = f,
+#              max_cycle = m,
+#              init_cycle = x))
+#   y <- x + f
+#   rep(It[x:y], periodos)
+# }

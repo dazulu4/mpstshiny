@@ -32,7 +32,7 @@ densidad.acumulada <- function(datosO, datos) {
 
 cuartil.cuartil <- function(datos) {
   if(!is.null(datos) && length(datos) > 0) {
-    ggqqplot(datos, xlab = "Cuantiles Teóricos", ylab = "Valores", color = "blue")+ggtitle("Normal Q-Q Plot")+
+    ggqqplot(datos, xlab = "Cuantiles Teóricos", ylab = "Valores", color = "blue", ggtheme=theme_gray())+ggtitle("Normal Q-Q Plot")+
       theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=26, hjust=0.5)) +
       theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=22))
   } else {
@@ -64,12 +64,13 @@ serie.tiempo <- function(datos, es.decom = FALSE, decom = NULL) {
   return(retorno)
 }
 
-generar.serie <- function(datos, inicio = as.character(Sys.Date()), frecuencia = 1.0) {
+generar.serie <- function(datos, inicio = as.character(Sys.Date()), frecuencia = 1) {
   datosSerie <- ts(datos,
                     start = decimal_date(ymd(inicio)),
                     frequency = frecuencia)
-  return(list(serie = datosSerie,
-              decom = descomponer.serie(datosSerie)))
+  a <- list(serie = datosSerie,
+            decom = descomponer.serie(datosSerie))
+  return(a)
 }
 
 descomponer.serie <- function(datos) {

@@ -29,20 +29,11 @@ anual <<- 1.0
 
 # Mensajes de usuario
 error.params.serie <- paste("La serie de tiempo no debe tener menos de 2 periodos.",
-                     "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
-                     "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
-                     sep = " ")
+                            "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
+                            "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
+                            sep = " ")
 error.inicio.serie <- "¡Valor de inicio de la serie invalido!"
 
-######################################################################
-### DEFINICIÓN DE VARIABLES GLOBALES
-######################################################################
-datos <<- list()
-datosVec <<- c()
-estadisticos <<- list()
-datosSerie <<- list()
-modeloPron <<- list()
-resultPron <<- list()
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA SHINY
@@ -62,12 +53,12 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                              "text/comma-separated-values,text/plain",
                                                              ".csv")),
                                         # tags$hr(),
-                                        checkboxInput("header", "¿Tiene encabezado?", FALSE),
-                                        selectInput("sep", h4("Separador de columnas"),
-                                                    choices = c(Coma = ",",
-                                                                "Punto y Coma" = ";",
-                                                                Tabulador = "\t"),
-                                                    selected = ","),
+                                        # checkboxInput("header", "¿Tiene encabezado?", FALSE),
+                                        radioButtons("sep", h4("Separador de columnas"),
+                                                     choices = c(Coma = ",",
+                                                                 "Punto y Coma" = ";",
+                                                                 Tabulador = "\t"),
+                                                     selected = ","),
                                         #radioButtons("quote", "Comillas",
                                         #             choices = c(Ninguna = "",
                                         #                         "Comillas Dobles" = '"',
@@ -131,12 +122,12 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #              min = 1,
                                         #              max = 365.25)
                                         radioButtons("frequency", h4("Frecuencia de la serie"),
-                                                    choices = c("Anual" = as.character(anual),
-                                                                "Trimestral" = as.character(trimestral),
-                                                                "Mensual" = as.character(mensual),
-                                                                "Semanal" = as.character(semanal),
-                                                                "Diario" = as.character(diaria)),
-                                                    selected = as.character(mensual))
+                                                     choices = c("Anual" = as.character(anual),
+                                                                 "Trimestral" = as.character(trimestral),
+                                                                 "Mensual" = as.character(mensual),
+                                                                 "Semanal" = as.character(semanal)),
+                                                     # "Diario" = as.character(diaria)),
+                                                     selected = as.character(mensual))
                                       ),
                                       mainPanel(
                                         tabsetPanel(type = "tabs",
@@ -145,8 +136,8 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                     tabPanel(h5("Pruebas Normalidad"),
                                                              fluidRow(column(7, plotOutput("qqplot")),
                                                                       column(5, tableOutput("test"))
-                                                                      )
-                                                             ),
+                                                             )
+                                                    ),
                                                     tabPanel(h5("Serie Tiempo"), plotOutput("serie"))
                                         )
                                       )
@@ -164,12 +155,12 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         # tags$br(),
                                         useShinyjs(),
                                         selectInput("func", h4("Selecciona la función"),
-                                                     choices = c("Regresión Lineal" = "lineal",
-                                                                 "Regresión Cuadrática" = "quadratic",
-                                                                 "Regresión Cúbica" = "cubic",
-                                                                 "Regresión Grado 4" = "gfour",
-                                                                 "Regresión Grado 5" = "gfive"),
-                                                     selected = "lineal"),
+                                                    choices = c("Regresión Lineal" = "lineal",
+                                                                "Regresión Cuadrática" = "quadratic",
+                                                                "Regresión Cúbica" = "cubic"),
+                                                    # "Regresión Grado 4" = "gfour",
+                                                    # "Regresión Grado 5" = "gfive"),
+                                                    selected = "lineal"),
                                         # ,tags$hr(),
                                         # radioButtons("interven", "Intervenciones",
                                         #              choices = c("Ninguno" = "inone",
@@ -178,28 +169,34 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         #                          "Outliers" = "outliers"),
                                         #              selected = "inone")
                                         tags$hr(),
-                                        sliderInput("ahead",
+                                        sliderInput("h",
                                                     h4("Periodos para pronóstico"),
-                                                    value = 50,
-                                                    min = 20,
-                                                    max = 100),
-                                        sliderInput("confidence",
+                                                    value = 20,
+                                                    min = 10,
+                                                    max = 50,
+                                                    step = 10),
+                                        sliderInput("level",
                                                     h4("Nivel de confianza"),
-                                                    value = 0.95,
-                                                    min = 0.85,
-                                                    max = 0.99,
-                                                    step = 0.025)
+                                                    value = 95,
+                                                    min = 80,
+                                                    max = 99,
+                                                    step = 1)
                                       ),
                                       mainPanel(
                                         tabsetPanel(
                                           tabPanel(h5("Pronóstico"), plotOutput("forecast")),
                                           tabPanel(h5("Diagnóstico"), plotOutput("diagnosis")),
-                                          tabPanel(h5("Resumen"), verbatimTextOutput('summary'))
+                                          tabPanel(h5("Resumen"),
+                                                   wellPanel(h4("Medidas de bondad de ajuste"),
+                                                             verbatimTextOutput('summary1')),
+                                                   wellPanel(h4("Estadísticos del modelo"),
+                                                             verbatimTextOutput('summary2')))
                                         )
                                       )
                                     )
                            )
                 )
+
 )
 
 ######################################################################
@@ -213,8 +210,7 @@ server <- function(input, output, session) {
     req(input$file1)
 
     datos <<- try(cargar.archivo(archivo = input$file1$datapath,
-                   encabezado = input$header,
-                   separador = input$sep)) #comillas = input$quote)
+                                 separador = input$sep))
     if(inherits(datos, "try-error")) {
       mostrar.mensaje(titulo = "Error!",
                       mensaje = paste("Ocurrio un error cargando el archivo.",
@@ -222,12 +218,17 @@ server <- function(input, output, session) {
                                       sep = " "))
     }
 
+    # Solo se hace para garantizar la carga
+    # t <- calc.totales()
+    # e <- calc.estadisticos()
+
     if(input$disp == "head") {
       nuevos.datos <- head(datos)
     }
     else {
       nuevos.datos <- datos
     }
+
     datatable(nuevos.datos,
               options = list(pageLength = 5),
               class = 'cell-border stripe',
@@ -340,18 +341,9 @@ server <- function(input, output, session) {
   output$serie <- renderPlot({
     req(input$file1)
     #Gráfico Serie de tiempo
-    serie.result <- try(generar.serie(datosVec,
-                                  inicio = fecha.inicio(input$start),
-                                  frecuencia = as.double(input$frequency)))
-    if(inherits(serie.result, "try-error")) {
-      # return(plot(x = 0,
-      #             y = 0,
-      #             main = paste("Ocurrió un error al generar el gráfico.",
-      #                          "Verifique los parámetros de entrada.",
-      #                          sep = " ")))
-    } else {
-      datosSerie <<- serie.result$serie
-      datosDecom <- serie.result$decom
+    serie.result <- cargar.serie.tiempo()
+    if(!is.null(datosDecom) &&
+       length(datosDecom) > 0) {
       if(!datosDecom$es.decom) {
         mostrar.mensaje(titulo = "Advertencia!", mensaje = error.params.serie)
       }
@@ -360,19 +352,38 @@ server <- function(input, output, session) {
   })
 
   # Validación de parámetros de la serie de tiempo
+
   observeEvent(input$start, {
     ifelse(!validar.fecha(input$start), Sys.Date(), input$start)
   })
+
   output$nodate <- renderText({
     if(!validar.fecha(input$start)) { error.inicio.serie }
   })
+
   validar.fecha <- function(fecha = Sys.Date()) {
     isTruthy(input$start)
   }
+
   fecha.inicio <- function(fecha = Sys.Date()) {
     ifelse(!validar.fecha(fecha),
            as.character(Sys.Date()),
            as.character(fecha))
+  }
+
+  cargar.serie.tiempo <- function() {
+    serie.result <- try(generar.serie(datosVec,
+                                      inicio = fecha.inicio(input$start),
+                                      frecuencia = as.double(input$frequency)))
+    if(inherits(serie.result, "try-error")) {
+      datosSerie <<- list()
+      datosDecom <<- list()
+      return(NULL)
+    } else {
+      datosSerie <<- serie.result$serie
+      datosDecom <<- serie.result$decom
+      return(serie.result)
+    }
   }
 
 
@@ -382,42 +393,72 @@ server <- function(input, output, session) {
     toggleState(id = "func", condition = (input$model == "trend" || input$model == "season"))
   })
 
-  calcular.modelo <- reactive({
+  calcular.modelo <- function() {
     retorno <- try(switch(input$model,
-                          "trend" = tendencia.funcion(datosSerie, input$func),
-                          "season" = tendencia.funcion(datosSerie, input$func, estacion = TRUE),
-                          "holtwinters" = calcular.holtwinters(datosSerie),
-                          "arima" = calcular.arima(datosSerie)))
+                          "trend" = tendencia.funcion(datos = datosSerie,
+                                                      funcion = input$func,
+                                                      estacion = FALSE,
+                                                      periodos = input$h,
+                                                      nivel = input$level),
+                          "season" = tendencia.funcion(datos = datosSerie,
+                                                       funcion = input$func,
+                                                       estacion = TRUE,
+                                                       periodos = input$h,
+                                                       nivel = input$level),
+                          "holtwinters" = calcular.holtwinters(datosSerie, input$h, input$level),
+                          "arima" = calcular.arima(datosSerie, input$h, input$level)))
     if(inherits(retorno, "try-error")) {
       return(NULL)
     } else {
-      return(retorno)
-    }
-
-  })
-
-  calcular.modelo.func <- reactive({
-    retorno <- try(switch(input$func,
-                          "lineal" = calcular.regresion(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE), 1),
-                          "quadratic" = calcular.regresion(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE), 2),
-                          "cubic" = calcular.regresion(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE), 3),
-                          "gfour" = calcular.regresion(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE), 4),
-                          "gfive" = calcular.regresion(datosSerie, estacion = ifelse(input$model == "season", TRUE, FALSE), 5)))
-    if(!inherits(retorno, "try-error")) {
       modeloPron <<- retorno$modelo
       resultPron <<- retorno$pronos
     }
-  })
+  }
+
+  calcular.modelo.func <- function() {
+    retorno <- try(switch(input$func,
+                          "lineal" = calcular.regresion(datos = datosSerie,
+                                                        estacion = ifelse(input$model == "season", TRUE, FALSE),
+                                                        grado = "grado1",
+                                                        periodos = input$h,
+                                                        nivel = input$level),
+                          "quadratic" = calcular.regresion(datos = datosSerie,
+                                                           estacion = ifelse(input$model == "season", TRUE, FALSE),
+                                                           grado = "grado2",
+                                                           periodos = input$h,
+                                                           nivel = input$level),
+                          "cubic" = calcular.regresion(datos = datosSerie,
+                                                       estacion = ifelse(input$model == "season", TRUE, FALSE),
+                                                       grado = "grado3",
+                                                       periodos = input$h,
+                                                       nivel = input$level)))
+    # "gfour" = calcular.regresion(datos = datosSerie,
+    #                              estacion = ifelse(input$model == "season", TRUE, FALSE),
+    #                              grado = "grado4",
+    #                              periodos = input$h,
+    #                              nivel = input$level),
+    # "gfive" = calcular.regresion(datos = datosSerie,
+    #                              estacion = ifelse(input$model == "season", TRUE, FALSE),
+    #                              grado = "grado5",
+    #                              periodos = input$h,
+    #                              nivel = input$level)))
+    if(inherits(retorno, "try-error")) {
+      modeloPron <<- NULL
+      resultPron <<- NULL
+    } else {
+      modeloPron <<- retorno$modelo
+      resultPron <<- retorno$pronos
+    }
+  }
 
   output$forecast <- renderPlot({
     req(input$file1)
-
     retorno <- try(generar.pron(input$model,
                                 "pronostico",
                                 input$start,
                                 input$frequency,
-                                input$ahead,
-                                input$confidence))
+                                input$h,
+                                input$level))
     if(inherits(retorno, "try-error")) {
       return(NULL)
     } else {
@@ -427,13 +468,12 @@ server <- function(input, output, session) {
 
   output$diagnosis <- renderPlot({
     req(input$file1)
-
     retorno <- try(generar.pron(input$model,
                                 "diagnostico",
                                 input$start,
                                 input$frequency,
-                                input$ahead,
-                                input$confidence))
+                                input$h,
+                                input$level))
     if(inherits(retorno, "try-error")) {
       return(NULL)
     } else {
@@ -441,48 +481,67 @@ server <- function(input, output, session) {
     }
   })
 
-  output$summary <- renderPrint({
+  output$summary1 <- renderPrint({
     req(input$file1)
-
     retorno <- try(generar.pron(input$model,
-                                "resumen",
+                                "resumen1",
                                 input$start,
                                 input$frequency,
-                                input$ahead,
-                                input$confidence))
+                                input$h,
+                                input$level))
     if(inherits(retorno, "try-error")) {
-      return(data.frame(Mensaje = "No existe información resumen de los pronósticos."))
+      return(data.frame(Mensaje = "No existe información medidas de los pronósticos."))
+    } else {
+      return(retorno)
+    }
+  })
+
+  output$summary2 <- renderPrint({
+    req(input$file1)
+    retorno <- try(generar.pron(input$model,
+                                "resumen2",
+                                input$start,
+                                input$frequency,
+                                input$h,
+                                input$level))
+    if(inherits(retorno, "try-error")) {
+      return(data.frame(Mensaje = "No existe información estadísticos de los pronósticos."))
     } else {
       return(retorno)
     }
   })
 
   # Función general para pronóstico
-  generar.pron <- function(tipo, opcion, inicio, frecuencia, periodos = 20, nivel = 0.95) {
-    serie.result <- generar.serie(datosVec,
-                                  fecha.inicio(inicio),
-                                  as.double(frecuencia));
-    if(tipo == "trend") {
-      calcular.modelo()
-      calcular.modelo.func()
-      return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
-    }
-    else {
-      if(serie.result$es.decom) {
-        if(tipo == "season") {
-          calcular.modelo()
-          calcular.modelo.func()
-          return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
-        }
-        else if(tipo == "holtwinters") {
-          calcular.modelo()
-          return(holtwinters.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
-        }
-        else if(tipo == "arima") {
-          calcular.modelo()
-          return(arima.opcion(datosSerie, modeloPron, resultPron, opcion, periodos, nivel))
+  generar.pron <- function(tipo, opcion, inicio, frecuencia, periodos = 20, nivel = 95) {
+    serie.result <- cargar.serie.tiempo()
+    datosSerie <<- serie.result$serie
+    datosDecom <<- serie.result$decom
+    if(!is.null(datosSerie) && length(datosSerie) > 0 &&
+       !is.null(datosDecom) && length(datosDecom) > 0) {
+      if(tipo == "trend") {
+        calcular.modelo()
+        calcular.modelo.func()
+        return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos))
+      }
+      else {
+        if(datosDecom$es.decom) {
+          if(tipo == "season") {
+            calcular.modelo()
+            calcular.modelo.func()
+            return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos))
+          }
+          else if(tipo == "holtwinters") {
+            calcular.modelo()
+            return(holtwinters.opcion(datosSerie, modeloPron, resultPron, opcion, nivel))
+          }
+          else if(tipo == "arima") {
+            calcular.modelo()
+            return(arima.opcion(datosSerie, modeloPron, resultPron, opcion, nivel))
+          }
         }
       }
+    } else {
+      return()
     }
   }
 
@@ -500,11 +559,19 @@ server <- function(input, output, session) {
 ######################################################################
 ### DEFINICIÓN FUNCIÓN PARA EJECUTAR PROGRAMA
 ######################################################################
+
 ejecutar <- function() {
+  ### DEFINICIÓN DE VARIABLES GLOBALES
+  datos <<- list()
+  datosVec <<- c()
+  totales <<- list()
+  estadisticos <<- list()
+  datosSerie <<- list()
+  modeloPron <<- list()
+  resultPron <<- list()
   decimales <<- 6
+
   useShinyjs()
   runApp(shinyApp(ui = ui, server = server))
 }
-
-ejecutar()
 

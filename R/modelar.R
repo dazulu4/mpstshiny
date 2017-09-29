@@ -8,16 +8,19 @@
 # INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN CON LOS
 # INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-tendencia.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel = 0.95) {
+tendencia.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.tend(datos, modelo, pronostico, periodos, nivel)
+           graficar.pronostico.tend(datos, modelo, pronostico, periodos)
          },
          diagnostico={
            graficar.diagnostico.tend(datos, modelo)
          },
-         resumen={
-           resumir.diagnostico.tend(modelo)
+         resumen1={
+           resumir1.diagnostico.tend(modelo)
+         },
+         resumen2={
+           resumir2.diagnostico.tend(modelo)
          },
          {
            return()
@@ -25,26 +28,44 @@ tendencia.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, n
   )
 }
 
-graficar.pronostico.tend <- function(datos, modelo, pronostico, periodos, nivel) {
-  tiempo <- seq(1:length(datos))
+graficar.pronostico.tend <- function(datos, modelo, pronostico, periodos) {
+  # tiempo <- seq(1:length(datos))
+  # list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
+  #      pron = lines(modelo$fitted.values, col = "red", lwd = 2),
+  #      leyenda = legend("topleft",
+  #                       c("Real","Pronostico"),
+  #                       lwd = c(2, 2),
+  #                       col = c('black','red'),
+  #                       bty = "n"),
+  #      grid())
 
-  #### TODO Se debe agregar la graficación del pronostico
-  #### el cual se encuentra guardado en la variable "pronostico"
-  #### calculado en la función calcular.regresion
+  tiempo.a <- seq(1:length(datos))
+  tiempo.n <- seq(from = (length(tiempo.a) + 1),
+                  by = 1,
+                  length.out = periodos)
 
-  list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
-       pron = lines(modelo$fitted.values, col = "red", lwd = 2),
-       leyenda = legend("topleft",
-                        c("Real","Pronostico"),
-                        lwd = c(2, 2),
-                        col = c('black','red'),
-                        bty = "n"),
-       grid())
+  na.a <- rep(NA, length(pronostico$x))
+  na.n <- rep(NA, periodos)
+
+  pronos.df <- data.frame(Index = c(tiempo.a, tiempo.n),
+                          Data = c(pronostico$x, na.n),
+                          Fitted = c(pronostico$fitted, na.n),
+                          Forecast = c(na.a, pronostico$mean),
+                          Lower = c(na.a, pronostico$lower),
+                          Upper = c(na.a, pronostico$upper))
+
+
+  ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
+    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
 }
 
 graficar.diagnostico.tend <- function(datos, modelo) {
   tiempo <- seq(1:length(datos))
   residual = modelo$residuals
+
   list(tablero = par(mfrow=c(2,2)),
        residual = plot(tiempo, residual, type='b', ylab='', main="Residuales", col="red"),
        rlinea = abline(h=0, lty=2),
@@ -53,29 +74,65 @@ graficar.diagnostico.tend <- function(datos, modelo) {
        qlinea = qqline(residual, col=2),
        correl = acf(residual, ci.type="ma", 60),
        grid())
+  # size_fonts.x <- 18
+  # size_fonts.y <- 12
+  #
+  # gresidual <- ggplot(modelo, aes(x=tiempo, y=residual), type = "dashed") + geom_smooth(method = "lm", formula = modelo$call[[2]], se = FALSE, color = "lightgrey")
+  # # gresidual <- gresidual + geom_segment(aes(xend = tiempo, yend = modelo$model$datos), alpha = .2)
+  # gresidual <- gresidual + geom_point(aes(color = residual))
+  # gresidual <- gresidual + scale_color_gradient2(low = "blue", mid = "white", high = "red")
+  # # gresidual <- gresidual + guides(color = FALSE)
+  # # gresidual <- gresidual + geom_point(aes(y = modelo$model$datos), shape = 1)
+  # gresidual <- gresidual +labs( x="Tiempo", y="")+ggtitle("Residuales")
+  # gresidual <- gresidual + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  # gresidual <- gresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+
+  # gqpuntos <- ggqqplot(residual, xlab = "Cuantiles Teóricos", ylab = "Muestra", color = "blue", ggtheme=theme_gray(),)+ggtitle("Normal Q-Q Plot")
+  # gqpuntos <- gqpuntos + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  # gqpuntos <- gqpuntos + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+
+  # gdresidual <- ggplot(modelo, aes(x=residual)) + geom_density(fill="blue", colour=NA, alpha=.2) +   geom_line(stat = "density")
+  # gdresidual <- gdresidual + expand_limits(y = 0) + ggtitle("Densidad de residuales") + theme(plot.title = element_text(hjust = 0.5))
+  # gdresidual <- gdresidual + xlab("Residual") + ylab("Densidad")
+  # gdresidual <- gdresidual + theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  # gdresidual <- gdresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+  #
+  # bacf <- acf(residual, ci.type="ma", 60)
+  # bacfdf <- with(bacf, data.frame(lag, acf))
+  # ci2 = qnorm((1 + .95)/2)/sqrt(length(rnorm(bacf$acf)))
+  #
+  # gcorrel <- ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) + geom_hline(aes(yintercept = 0))
+  # gcorrel <- gcorrel +  geom_segment(mapping = aes(xend = lag, yend = 0))
+  # gcorrel <- gcorrel + geom_hline(yintercept = c(ci2, -ci2), color = "purple", linetype = "dashed")+ggtitle("Series Residual")
+  # gcorrel <- gcorrel +  theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5))
+  # gcorrel <- gcorrel +  theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
+
+  # multiplot(gresidual, gqpuntos, gdresidual, gcorrel, cols = 2)
 }
 
-resumir.diagnostico.tend <- function(modelo) {
-  list("Measures:" = accuracy(modelo),
-       "Summary:" = summary(modelo))
+resumir1.diagnostico.tend <- function(modelo) {
+  accuracy(modelo)
+}
+resumir2.diagnostico.tend <- function(modelo) {
+  summary(modelo)
 }
 
-tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
+tendencia.funcion <- function(datos, funcion, estacion = FALSE, periodos = 20, nivel = 95) {
   switch(funcion,
          lineal={
-           calcular.regresion(datos, estacion, 1)
+           calcular.regresion(datos, estacion, "grado1", periodos, nivel)
          },
          quadratic={
-           calcular.regresion(datos, estacion, 2)
+           calcular.regresion(datos, estacion, "grado2", periodos, nivel)
          },
          cubic={
-           calcular.regresion(datos, estacion, 3)
+           calcular.regresion(datos, estacion, "grado3", periodos, nivel)
          },
          gfour={
-           calcular.regresion(datos, estacion, 4)
+           calcular.regresion(datos, estacion, "grado4", periodos, nivel)
          },
          gfive={
-           calcular.regresion(datos, estacion, 5)
+           calcular.regresion(datos, estacion, "grado5", periodos, nivel)
          },
          {
            return()
@@ -83,33 +140,36 @@ tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
   )
 }
 
-calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
-  modeloPron <- NULL
-  longitud <- length(datos)
-  valores <- seq(1:longitud)
-  tiempo <- matrix(rep(0, longitud * grado), nrow = longitud, ncol = grado)
-  for(i in 1:grado) {
-    tiempo[,i] <- valores^i
-  }
-  # It = Variables indicadoras en función del tiempo
-  if(estacion) {
-    It <- seasonaldummy(datos)
-    modeloPron <- lm(formula = datos ~ tiempo + It)
-  }
-  else {
-    modeloPron <- lm(formula = datos ~ tiempo)
+calcular.regresion <- function(datos, estacion = FALSE, grado = "grado1", periodos = 20, nivel = 95) {
+  # tiempo <- matrix(rep(0, longitud * grado), nrow = longitud, ncol = grado)
+  # for(i in 1:grado) {
+  #   tiempo[,i] <- valores^i
+  # }
+
+  tiempos <- seq(1:length(datos))
+
+  valores <- NULL
+  switch(grado,
+         grado1={ valores <- calcular.regresion.1(datos, estacion, tiempos, periodos) },
+         grado2={ valores <- calcular.regresion.2(datos, estacion, tiempos, periodos) },
+         grado3={ valores <- calcular.regresion.3(datos, estacion, tiempos, periodos) },
+         grado4={ valores <- calcular.regresion.4(datos, estacion, tiempos, periodos) },
+         grado5={ valores <- calcular.regresion.5(datos, estacion, tiempos, periodos) },
+         { valores <- NULL })
+
+  if(!is.null(valores)) {
+    valor.pronos <- forecast(valores$modelo,
+                             level = nivel,
+                             newdata = valores$nuevo,
+                             allow.multiplicative.trend = TRUE)
+
+    return(list(modelo = valores$modelo,
+                pronos = valor.pronos))
+  } else {
+    return(list(modelo = NULL,
+                pronos = NULL))
   }
 
-  #### TODO: Elaborar el pronóstico con forecast para el modelado
-  #### de regresión lineal y retornar los gráficos correspondientes
-  #### El resultado se debe guardar en la variable global resultPron
-
-  # resultPron <- forecast(modelo, h = periodos, level = nivel)
-  # print(pron)
-
-  resultPron <- NULL
-  return(list(modelo = modeloPron,
-              pronos = resultPron))
 }
 
 ######################################################################
@@ -119,16 +179,19 @@ calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
 # MODELADO, LA INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN
 # CON LOS INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-holtwinters.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel = 0.95) {
+holtwinters.opcion <- function(datos, modelo, pronostico, opcion, nivel = 95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.hw(datos, modelo, pronostico, periodos, nivel)
+           graficar.pronostico.hw(datos, modelo, pronostico, nivel)
          },
          diagnostico={
            graficar.diagnostico.hw(datos, modelo)
          },
-         resumen={
-           resumir.diagnostico.hw(modelo)
+         resumen1={
+           resumir1.diagnostico.hw(pronostico)
+         },
+         resumen2={
+           resumir2.diagnostico.hw(modelo)
          },
          {
            return()
@@ -136,20 +199,23 @@ holtwinters.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20,
   )
 }
 
-graficar.pronostico.hw <- function(datos, modelo, pronostico, periodos, nivel) {
-
-  #### TODO Se debe agregar la graficación del pronostico
-  #### el cual se encuentra guardado en la variable "pronostico"
-  #### calculado en la función calcular.holtwinters
-
-  list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
-       pron = lines(modelo$fitted[,1], col = "red", lwd = 2),
-       leyenda = legend("topleft",
-                        c("Real","Pronostico"),
-                        lwd = c(2, 2),
-                        col = c('black','red'),
-                        bty = "n"),
-       grid())
+graficar.pronostico.hw <- function(datos, modelo, pronostico, nivel) {
+  # list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
+  #      pron = lines(modelo$fitted[,1], col = "red", lwd = 2),
+  #
+  #      leyenda = legend("topleft",
+  #                       c("Real","Pronostico"),
+  #                       lwd = c(2, 2),
+  #                       col = c('black','red'),
+  #                       bty = "n"),
+  #      grid())
+  ggplot(data = pronostico) + xlab("Tiempo") + ylab("Valores") +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
+    geom_line(mapping = aes_string(x = 'Index', y = '`Point Forecast`'), colour='blue') +
+    geom_ribbon(mapping = aes_string(x = 'Index',
+                                     ymin = paste('`Lo ', nivel, '`', sep = ''),
+                                     ymax = paste('`Hi ', nivel, '`', sep = '')),alpha = 0.5)
 }
 
 
@@ -166,7 +232,11 @@ graficar.diagnostico.hw <- function(datos, modelo) {
        grid())
 }
 
-resumir.diagnostico.hw <- function(modelo) {
+resumir1.diagnostico.hw <- function(modelo) {
+  accuracy(modelo)
+}
+
+resumir2.diagnostico.hw <- function(modelo) {
   formula <- as.character(modelo$call)
   summary <- data.frame(alpha = modelo$alpha[[1]],
                         beta = modelo$beta[[1]],
@@ -175,19 +245,13 @@ resumir.diagnostico.hw <- function(modelo) {
                         SSE = modelo$SSE,
                         call = paste(formula[1], "(formula = ", formula[2], ")", sep = ""))
   coefficients <- data.frame(values = modelo$coefficients)
-  list("Measures" = list(),#accuracy(modelo),
-       "Summary:" = summary,
+  list("Summary:" = summary,
        "Coefficients:" = coefficients)
 }
 
-calcular.holtwinters <- function(datos) {
+calcular.holtwinters <- function(datos, periodos = 20, nivel = 95) {
   modeloPron <- HoltWinters(datos)
-
-  #### TODO: Elaborar el pronóstico con forecast para el modelado
-  #### de Holt Winters y retornar los gráficos correspondientes
-  #### El resultado se debe guardar en la variable global resultPron
-
-  resultPron <- NULL
+  resultPron <- forecast(modeloPron, h = periodos, level = nivel)
   return(list(modelo = modeloPron,
               pronos = resultPron))
 }
@@ -199,16 +263,19 @@ calcular.holtwinters <- function(datos) {
 # MODELADO, LA INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN
 # CON LOS INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-arima.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel = 0.95) {
+arima.opcion <- function(datos, modelo, pronostico, opcion, nivel = 95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.arima(datos, modelo, pronostico, periodos, nivel)
+           graficar.pronostico.arima(datos, modelo, pronostico, nivel)
          },
          diagnostico={
            graficar.diagnostico.arima(datos, modelo)
          },
-         resumen={
-           resumir.diagnostico.arima(modelo)
+         resumen1={
+           resumir1.diagnostico.arima(modelo)
+         },
+         resumen2={
+           resumir2.diagnostico.arima(modelo)
          },
          {
            return()
@@ -216,20 +283,22 @@ arima.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20, nivel
   )
 }
 
-graficar.pronostico.arima <- function(datos, modelo, pronostico, periodos, nivel) {
-
-  #### TODO Se debe agregar la graficación del pronostico
-  #### el cual se encuentra guardado en la variable "pronostico"
-  #### calculado en la función calcular.arima
-
-  list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
-       pron = lines(modelo$fitted, col = "red", lwd = 2),
-       leyenda = legend("topleft",
-                        c("Real","Pronostico"),
-                        lwd = c(2, 2),
-                        col = c('black','red'),
-                        bty = "n"),
-       grid())
+graficar.pronostico.arima <- function(datos, modelo, pronostico, nivel) {
+  # list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
+  #      pron = lines(modelo$fitted, col = "red", lwd = 2),
+  #      leyenda = legend("topleft",
+  #                       c("Real","Pronostico"),
+  #                       lwd = c(2, 2),
+  #                       col = c('black','red'),
+  #                       bty = "n"),
+  #      grid())
+  ggplot(data = pronostico) + xlab("Tiempo") + ylab("Valores") +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
+    geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
+    geom_line(mapping = aes_string(x = 'Index', y = '`Point Forecast`'), colour='blue') +
+    geom_ribbon(mapping = aes_string(x = 'Index',
+                                     ymin = paste('`Lo ', nivel, '`', sep = ''),
+                                     ymax = paste('`Hi ', nivel, '`', sep = '')),alpha = 0.5)
 }
 
 graficar.diagnostico.arima <- function(datos, modelo) {
@@ -250,18 +319,17 @@ graficar.diagnostico.arima <- function(datos, modelo) {
        grid())
 }
 
-resumir.diagnostico.arima <- function(modelo) {
+resumir1.diagnostico.arima <- function(modelo) {
+  accuracy(modelo)
+}
+
+resumir2.diagnostico.arima <- function(modelo) {
   summary(modelo)
 }
 
-calcular.arima <- function(datos) {
+calcular.arima <- function(datos, periodos = 20, nivel = 95) {
   modeloPron <- auto.arima(datos)
-
-  #### TODO: Elaborar el pronóstico con forecast para el modelado
-  #### de Auto ARIMA y retornar los gráficos correspondientes
-  #### El resultado se debe guardar en la variable global resultPron
-
-  resultPron <- NULL
+  resultPron <- forecast(modeloPron, h = periodos, level = nivel)
   return(list(modelo = modeloPron,
               pronos = resultPron))
 }
