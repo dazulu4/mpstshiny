@@ -10,7 +10,7 @@ devtools::install_github("dazulu4/mpstshiny")
 ```
 ## Autores
 
-* Pedro Turriado
+* Pedro Turriago
 * Davinson Mosquera
 * Alexander Zuluaga
 
