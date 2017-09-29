@@ -6,32 +6,34 @@ cargar.archivo <- function(archivo,
                            encabezado = FALSE,
                            separador = ',',
                            comillas = '"') {
-  datos <<- read.csv(file = archivo,
+  datos <- read.csv(file = archivo,
                      header = encabezado,
                      sep = separador,
                      quote = comillas,
                      fill = TRUE)
+  return(datos)
 }
 
-calcular.totales <- function(columna = 1) {
+calcular.totales <- function(datos, columna = 1) {
   total <- length(datos[,columna])
   totalNA <- sum(is.na(datos[,columna]))
-  datos <<- na.omit(datos[,columna])
+  datos <- na.omit(datos[,columna])
   datosNN <- suppressWarnings(as.numeric(as.character(datos)))
   totalNN <- sum(is.na(datosNN))
-  datos <<- na.omit(data.frame(datosNN))
+  datos <- na.omit(data.frame(datosNN))
   totalNM <- length(datos[,columna])
-  totales <- list(Cargados = total,
-                  Numericos = totalNM,
-                  No_Numericos = totalNN,
-                  Valores_Nulos = totalNA)
-
-  datosVec <<- datos[,columna]
-  datos <<- data.frame(datosVec)
-  return(totales)
+  totales <- data.frame(Cargados = total,
+                        Numericos = totalNM,
+                        No_Numericos = totalNN,
+                        Valores_Nulos = totalNA)
+  datosVec <- datos[,columna]
+  datos <- data.frame(datosVec)
+  return(list(datos = datos,
+              vector = datosVec,
+              totales = totales))
 }
 
-calcular.estadisticos <- function(columna = 1, tolerancia = 30, replicas = 1000) {
+calcular.estadisticos <- function(datos, columna = 1, tolerancia = 30, replicas = 1000) {
   media <- round(mean(datos[,columna]), decimales)
   desv <- round(sd(datos[,columna]), decimales)
   minimo <- round(min(datos[,columna]), decimales)
@@ -43,11 +45,11 @@ calcular.estadisticos <- function(columna = 1, tolerancia = 30, replicas = 1000)
     desv <- round(resultado$desv, decimales)
     bootstrap <- TRUE
   }
-  estadisticos <<- list(Media = media,
-                       Desv_Estandar = desv,
-                       Minimo = minimo,
-                       Maximo = maximo,
-                       Bootstrap = ifelse(bootstrap, "Si", "No"))
+  estadisticos <- data.frame(Media = media,
+                              Desv_Estandar = desv,
+                              Minimo = minimo,
+                              Maximo = maximo,
+                              Bootstrap = ifelse(bootstrap, "Si", "No"))
   return(estadisticos)
 }
 

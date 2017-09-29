@@ -84,6 +84,7 @@ tendencia.funcion <- function(datos, funcion, estacion = FALSE) {
 }
 
 calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
+  modeloPron <- NULL
   longitud <- length(datos)
   valores <- seq(1:longitud)
   tiempo <- matrix(rep(0, longitud * grado), nrow = longitud, ncol = grado)
@@ -93,20 +94,22 @@ calcular.regresion <- function(datos, estacion = FALSE, grado = 1) {
   # It = Variables indicadoras en función del tiempo
   if(estacion) {
     It <- seasonaldummy(datos)
-    modeloPron <<- lm(formula = datos ~ tiempo + It)
+    modeloPron <- lm(formula = datos ~ tiempo + It)
   }
   else {
-    modeloPron <<- lm(formula = datos ~ tiempo)
+    modeloPron <- lm(formula = datos ~ tiempo)
   }
 
   #### TODO: Elaborar el pronóstico con forecast para el modelado
   #### de regresión lineal y retornar los gráficos correspondientes
   #### El resultado se debe guardar en la variable global resultPron
 
-  # resultPron <<- forecast(modelo, h = periodos, level = nivel)
+  # resultPron <- forecast(modelo, h = periodos, level = nivel)
   # print(pron)
 
-  resultPron <<- NULL
+  resultPron <- NULL
+  return(list(modelo = modeloPron,
+              pronos = resultPron))
 }
 
 ######################################################################
@@ -178,13 +181,15 @@ resumir.diagnostico.hw <- function(modelo) {
 }
 
 calcular.holtwinters <- function(datos) {
-  modeloPron <<- HoltWinters(datos)
+  modeloPron <- HoltWinters(datos)
 
   #### TODO: Elaborar el pronóstico con forecast para el modelado
   #### de Holt Winters y retornar los gráficos correspondientes
   #### El resultado se debe guardar en la variable global resultPron
 
-  resultPron <<- NULL
+  resultPron <- NULL
+  return(list(modelo = modeloPron,
+              pronos = resultPron))
 }
 
 ######################################################################
@@ -250,11 +255,13 @@ resumir.diagnostico.arima <- function(modelo) {
 }
 
 calcular.arima <- function(datos) {
-  modeloPron <<- auto.arima(datos)
+  modeloPron <- auto.arima(datos)
 
   #### TODO: Elaborar el pronóstico con forecast para el modelado
   #### de Auto ARIMA y retornar los gráficos correspondientes
   #### El resultado se debe guardar en la variable global resultPron
 
-  resultPron <<- NULL
+  resultPron <- NULL
+  return(list(modelo = modeloPron,
+              pronos = resultPron))
 }
