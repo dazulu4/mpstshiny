@@ -41,7 +41,7 @@ error.inicio.serie <- "¡Valor de inicio de la serie invalido!"
 ui <- fluidPage(theme = shinytheme("cerulean"),
                 themeSelector(),
                 navbarPage("R-MPST",
-                           tabPanel("CARGAR",
+                           tabPanel("CARGAR DATOS",
                                     # titlePanel("Carga tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
@@ -97,7 +97,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 
                                     )
                            ),
-                           tabPanel("ANALIZAR",
+                           tabPanel("ANÁLIZAR",
                                     # titlePanel("Analiza tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
@@ -143,7 +143,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                       )
                                     )
                            ),
-                           tabPanel("MODELAR",
+                           tabPanel("AJUSTAR MODELOS",
                                     # titlePanel("Modela tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
