@@ -652,6 +652,21 @@ ejecutar <- function() {
   decimales <<- 6
   tipo_modelo <<- list()
 
+  # Frecuencias series de tiempo
+  diaria <<- 365.28
+  semanal <<- round(diaria/7, 2)
+  mensual <<- 12.0
+  trimestral <<- 4.0
+  anual <<- 1.0
+  tipo_modelo <<- list()
+
+  # Mensajes de usuario
+  error.params.serie <<- paste("La serie de tiempo no debe tener menos de 2 periodos.",
+                               "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
+                               "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
+                               sep = " ")
+  error.inicio.serie <<- "¡Valor de inicio de la serie invalido!"
+
   useShinyjs()
   runApp(shinyApp(ui = ui, server = server))
 }
