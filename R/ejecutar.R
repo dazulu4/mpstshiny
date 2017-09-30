@@ -16,6 +16,23 @@ library(ggfortify)
 library(lubridate)
 require(graphics)
 
+######################################################################
+### DEFINICIÓN DE VARIABLES CONSTANTES
+######################################################################
+
+# Frecuencias series de tiempo
+diaria <<- 365.28
+semanal <<- round(diaria/7, 2)
+mensual <<- 12.0
+trimestral <<- 4.0
+anual <<- 1.0
+
+# Mensajes de usuario
+error.params.serie <<- paste("La serie de tiempo no debe tener menos de 2 periodos.",
+                             "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
+                             "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
+                             sep = " ")
+error.inicio.serie <<- "¡Valor de inicio de la serie invalido!"
 
 ######################################################################
 ### DEFINICIÓN DE INTERFAZ GRÁFICA SHINY
@@ -120,7 +137,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                                       column(5, tableOutput("test"))
                                                              )
                                                     ),
-                                                    tabPanel(h5("Descomposición de la serie"), plotOutput("serie"))
+                                                    tabPanel(h5("Descomposición de la Serie"), plotOutput("serie"))
                                         )
                                       )
                                     )
@@ -167,13 +184,15 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                       mainPanel(
                                         tabsetPanel(
                                           tabPanel(h5("Pronóstico"), plotOutput("forecast")),
-                                          tabPanel(h5("Resultados"), tableOutput("result")),
+                                          tabPanel(h5("Resultados"),
+                                                   wellPanel(h4("Medidas de bondad de ajuste"),
+                                                             dataTableOutput("result")),
+                                                   wellPanel(h4("Medidas de bondad de ajuste"),
+                                                             tableOutput('accuracy'))),
                                           tabPanel(h5("Diagnóstico"), plotOutput("diagnosis")),
                                           tabPanel(h5("Resumenes"),
-                                                   wellPanel(h4("Medidas de bondad de ajuste"),
-                                                             verbatimTextOutput('summary1')),
                                                    wellPanel(h4("Estadísticos del modelo"),
-                                                             verbatimTextOutput('summary2')))
+                                                             verbatimTextOutput('stats')))
                                         )
                                       )
                                     )
@@ -363,11 +382,13 @@ server <- function(input, output, session) {
       datosSerie <<- list()
       datosDecom <<- list()
       datosProno <<- list()
+      datosResto <<- list()
       return(NULL)
     } else {
       datosSerie <<- serie.result$serie
       datosDecom <<- serie.result$decom
       datosProno <<- serie.result$prono
+      datosResto <<- serie.result$resto
       return(serie.result)
     }
   }
@@ -454,7 +475,7 @@ server <- function(input, output, session) {
     }
   })
 
-  output$result <- renderPlot({
+  output$result <- renderDataTable({
     req(input$file1)
     retorno <- try(generar.pron(input$model,
                                 "resultado",
@@ -465,9 +486,29 @@ server <- function(input, output, session) {
     if(inherits(retorno, "try-error")) {
       return(NULL)
     } else {
-      return(retorno)
+
+      datatable(retorno,
+                options = list(pageLength = 5),
+                class = 'cell-border stripe',
+                rownames = TRUE,
+                style = "bootstrap")
     }
   })
+
+  output$accuracy <- renderTable({
+    req(input$file1)
+    retorno <- try(generar.pron(input$model,
+                                "accuracy",
+                                input$start,
+                                input$frequency,
+                                input$h,
+                                input$level))
+    if(inherits(retorno, "try-error")) {
+      return(data.frame(Mensaje = "No existe información medidas de los pronósticos."))
+    } else {
+      return(retorno)
+    }
+  }, spacing = "m", striped = TRUE, digits = decimales)
 
   output$diagnosis <- renderPlot({
     req(input$file1)
@@ -484,25 +525,10 @@ server <- function(input, output, session) {
     }
   })
 
-  output$summary1 <- renderPrint({
+  output$stats <- renderPrint({
     req(input$file1)
     retorno <- try(generar.pron(input$model,
-                                "resumen1",
-                                input$start,
-                                input$frequency,
-                                input$h,
-                                input$level))
-    if(inherits(retorno, "try-error")) {
-      return(data.frame(Mensaje = "No existe información medidas de los pronósticos."))
-    } else {
-      return(retorno)
-    }
-  })
-
-  output$summary2 <- renderPrint({
-    req(input$file1)
-    retorno <- try(generar.pron(input$model,
-                                "resumen2",
+                                "stats",
                                 input$start,
                                 input$frequency,
                                 input$h,
@@ -526,22 +552,22 @@ server <- function(input, output, session) {
       if(tipo == "trend") {
         calcular.modelo()
         calcular.modelo.func()
-        return(tendencia.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos))
+        return(tendencia.opcion(datosSerie, datosProno, datosResto, modeloPron, resultPron, opcion, periodos))
       }
       else {
         if(datosDecom$es.decom) {
           if(tipo == "season") {
             calcular.modelo()
             calcular.modelo.func()
-            return(tendencia.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos))
+            return(tendencia.opcion(datosSerie, datosProno, datosResto, modeloPron, resultPron, opcion, periodos))
           }
           else if(tipo == "holtwinters") {
             calcular.modelo()
-            return(holtwinters.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos, nivel))
+            return(holtwinters.opcion(datosSerie, datosProno, datosResto, modeloPron, resultPron, opcion, periodos, nivel))
           }
           else if(tipo == "arima") {
             calcular.modelo()
-            return(arima.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos, nivel))
+            return(arima.opcion(datosSerie, datosProno, datosResto, modeloPron, resultPron, opcion, periodos, nivel))
           }
         }
       }
@@ -573,23 +599,10 @@ ejecutar <- function() {
   estadisticos <<- list()
   datosSerie <<- list()
   datosProno <<- list()
+  datosResto <<- list()
   modeloPron <<- list()
   resultPron <<- list()
   decimales <<- 6
-
-  # Frecuencias series de tiempo
-  diaria <<- 365.28
-  semanal <<- round(diaria/7, 2)
-  mensual <<- 12.0
-  trimestral <<- 4.0
-  anual <<- 1.0
-
-  # Mensajes de usuario
-  error.params.serie <<- paste("La serie de tiempo no debe tener menos de 2 periodos.",
-                               "Por favor ajuste la frecuencia de la serie de tiempo, ya que",
-                               "los métodos de pronóstico estacionales y HoltWinters no funcionaran",
-                               sep = " ")
-  error.inicio.serie <<- "¡Valor de inicio de la serie invalido!"
 
   useShinyjs()
   runApp(shinyApp(ui = ui, server = server))

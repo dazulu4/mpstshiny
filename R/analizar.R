@@ -21,10 +21,15 @@ generar.normales <- function(datosO, datos, bloques = "Sturges", media, desv, mu
 
 densidad.acumulada <- function(datosO, datos) {
   if(!is.null(datos) && length(datos) > 0) {
-    ggplot(datosO, aes(x=datos, sample = length(datosO))) + stat_ecdf(aes(colour="Empírica"))+
+
+    d_acumulada <- fortify(ecdf(datos))
+    d <- data.frame(x = d_acumulada$x, y= d_acumulada$y)
+    ggplot(d, aes(x=d$x, y = d$y)) +
+      stat_ecdf(aes(colour="Empírica")) + geom_point(aes(x= d$x, y = d$y), col = "blue") +
       scale_colour_manual("",values = c("blue"))+labs( x="x", y="Fn(x)")+ggtitle("Densidad Acumulada")+
       theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=26, hjust=0.5)) +
       theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=22))
+
   } else {
     return(NULL)
   }
@@ -73,15 +78,21 @@ generar.serie <- function(datos, inicio = as.character(Sys.Date()), frecuencia =
                     frequency = frecuencia)
 
   datosProno <- NULL
-  if(length(datos) >= periodos) {
+  datosResto <- NULL
+  if(length(datos) > (periodos + 20)) {
     datosProno <- ts(datos[1:(length(datos)-periodos)],
+                     start = decimal_date(ymd(inicio)),
+                     frequency = frecuencia)
+    datosResto <- ts(datos[(length(datos)-periodos+1):length(datos)],
                      start = decimal_date(ymd(inicio)),
                      frequency = frecuencia)
   } else {
     datosProno <- datosSerie
+    datosResto <- NULL
   }
   return(list(serie = datosSerie,
               prono = datosProno,
+              resto = datosResto,
               decom = descomponer.serie(datosSerie)))
 }
 
