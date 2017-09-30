@@ -186,13 +186,13 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                       mainPanel(
                                         tabsetPanel(
                                           tabPanel(h5("Pronóstico"), plotOutput("forecast")),
-                                          tabPanel(h5("Resultados"),
+                                          tabPanel(h5("Resúmen pronóstico"),
                                                    wellPanel(h4("Resultados de pronóstico"),
                                                              dataTableOutput("result")),
                                                    wellPanel(h4("Medidas de bondad de ajuste"),
                                                              tableOutput('accuracy'))),
                                           tabPanel(h5("Diagnóstico"), plotOutput("diagnosis")),
-                                          tabPanel(h5("Resumenes"),
+                                          tabPanel(h5("Resúmen modelo"),
                                                    wellPanel(h4("Estadísticos del modelo"),
                                                              verbatimTextOutput('stats')))
                                         )
