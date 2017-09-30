@@ -42,22 +42,23 @@ graficar.pronostico.tend <- function(serie, datos, modelo, pronostico, periodos)
   #                       bty = "n"),
   #      grid())
 
-  tiempo.a <- seq(1:length(datos))
-  tiempo.n <- seq(from = (length(tiempo.a) + 1),
-                  by = 1,
-                  length.out = periodos)
+  # tiempo.a <- seq(1:length(datos))
+  # tiempo.n <- seq(from = (length(tiempo.a) + 1),
+  #                 by = 1,
+  #                 length.out = periodos)
 
-  na.a <- rep(NA, length(pronostico$x))
   na.n <- rep(NA, periodos)
+  na.a <- rep(NA, length(pronostico$x) - 1)
+  ult.a <- pronostico$fitted[(length(pronostico$fitted))]
 
   pronos.df <- data.frame(#Index = c(tiempo.a, tiempo.n),
                           Index = time(serie),
                           # Data = c(pronostico$x, na.n),
                           Data = serie,
                           Fitted = c(pronostico$fitted, na.n),
-                          Forecast = c(na.a, pronostico$mean),
-                          Lower = c(na.a, pronostico$lower),
-                          Upper = c(na.a, pronostico$upper))
+                          Forecast = c(na.a, ult.a, pronostico$mean),
+                          Lower = c(na.a, ult.a, pronostico$lower),
+                          Upper = c(na.a, ult.a, pronostico$upper))
 
   ggplot(data = pronos.df) + #xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
@@ -231,16 +232,17 @@ graficar.pronostico.hw <- function(serie, datos, modelo, pronostico, periodos, n
   #                       bty = "n"),
   #      grid())
 
-  na.a <- rep(NA, length(pronostico$x))
   na.n <- rep(NA, periodos)
+  na.a <- rep(NA, length(pronostico$x) - 1)
+  ult.a <- pronostico$fitted[(length(pronostico$fitted))]
 
   pronos.df <- data.frame(Index = time(serie),
                           # Data = c(pronostico$x, na.n),
                           Data = serie,
                           Fitted = c(pronostico$fitted, na.n),
-                          Forecast = c(na.a, pronostico$mean),
-                          Lower = c(na.a, pronostico$lower),
-                          Upper = c(na.a, pronostico$upper))
+                          Forecast = c(na.a, ult.a, pronostico$mean),
+                          Lower = c(na.a, ult.a, pronostico$lower),
+                          Upper = c(na.a, ult.a, pronostico$upper))
 
   ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
@@ -383,16 +385,17 @@ graficar.pronostico.arima <- function(serie, datos, modelo, pronostico, periodos
   #                       bty = "n"),
   #      grid())
 
-  na.a <- rep(NA, length(pronostico$x))
   na.n <- rep(NA, periodos)
+  na.a <- rep(NA, length(pronostico$x) - 1)
+  ult.a <- pronostico$fitted[(length(pronostico$fitted))]
 
   pronos.df <- data.frame(Index = time(serie),
                           # Data = c(pronostico$x, na.n),
                           Data = serie,
                           Fitted = c(pronostico$fitted, na.n),
-                          Forecast = c(na.a, pronostico$mean),
-                          Lower = c(na.a, pronostico$lower),
-                          Upper = c(na.a, pronostico$upper))
+                          Forecast = c(na.a, ult.a, pronostico$mean),
+                          Lower = c(na.a, ult.a, pronostico$lower),
+                          Upper = c(na.a, ult.a, pronostico$upper))
 
   ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
