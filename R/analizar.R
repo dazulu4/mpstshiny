@@ -67,13 +67,22 @@ serie.tiempo <- function(datos, es.decom = FALSE, decom = NULL) {
   return(retorno)
 }
 
-generar.serie <- function(datos, inicio = as.character(Sys.Date()), frecuencia = 1) {
+generar.serie <- function(datos, inicio = as.character(Sys.Date()), frecuencia = 1, periodos = 20) {
   datosSerie <- ts(datos,
                     start = decimal_date(ymd(inicio)),
                     frequency = frecuencia)
-  a <- list(serie = datosSerie,
-            decom = descomponer.serie(datosSerie))
-  return(a)
+
+  datosProno <- NULL
+  if(length(datos) >= periodos) {
+    datosProno <- ts(datos[1:(length(datos)-periodos)],
+                     start = decimal_date(ymd(inicio)),
+                     frequency = frecuencia)
+  } else {
+    datosProno <- datosSerie
+  }
+  return(list(serie = datosSerie,
+              prono = datosProno,
+              decom = descomponer.serie(datosSerie)))
 }
 
 descomponer.serie <- function(datos) {

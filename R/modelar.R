@@ -8,16 +8,19 @@
 # INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN CON LOS
 # INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-tendencia.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20) {
+tendencia.opcion <- function(serie, datos, modelo, pronostico, opcion, periodos = 20) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.tend(datos, modelo, pronostico, periodos)
+           graficar.pronostico.tend(serie, datos, modelo, pronostico, periodos)
+         },
+         resultado={
+           resumir.resultado.tend(serie, datos, modelo, pronostico, periodos)
          },
          diagnostico={
            graficar.diagnostico.tend(datos, modelo)
          },
          resumen1={
-           resumir1.diagnostico.tend(modelo)
+           resumir1.diagnostico.tend(pronostico)
          },
          resumen2={
            resumir2.diagnostico.tend(modelo)
@@ -28,7 +31,7 @@ tendencia.opcion <- function(datos, modelo, pronostico, opcion, periodos = 20) {
   )
 }
 
-graficar.pronostico.tend <- function(datos, modelo, pronostico, periodos) {
+graficar.pronostico.tend <- function(serie, datos, modelo, pronostico, periodos) {
   # tiempo <- seq(1:length(datos))
   # list(real = plot(tiempo, datos, type = "o", col = "black", lwd = 2, pch = 20),
   #      pron = lines(modelo$fitted.values, col = "red", lwd = 2),
@@ -48,18 +51,19 @@ graficar.pronostico.tend <- function(datos, modelo, pronostico, periodos) {
   na.n <- rep(NA, periodos)
 
   pronos.df <- data.frame(Index = c(tiempo.a, tiempo.n),
-                          Data = c(pronostico$x, na.n),
+                          # Data = c(pronostico$x, na.n),
+                          Data = serie,
                           Fitted = c(pronostico$fitted, na.n),
                           Forecast = c(na.a, pronostico$mean),
                           Lower = c(na.a, pronostico$lower),
                           Upper = c(na.a, pronostico$upper))
-
 
   ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
     geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
     geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
     geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
+
 }
 
 graficar.diagnostico.tend <- function(datos, modelo) {
@@ -166,8 +170,7 @@ calcular.regresion <- function(datos, estacion = FALSE, grado = "grado1", period
   if(!is.null(valores)) {
     valor.pronos <- forecast(valores$modelo,
                              level = nivel,
-                             newdata = valores$nuevo,
-                             allow.multiplicative.trend = TRUE)
+                             newdata = valores$nuevo)
 
     return(list(modelo = valores$modelo,
                 pronos = valor.pronos))
@@ -185,10 +188,10 @@ calcular.regresion <- function(datos, estacion = FALSE, grado = "grado1", period
 # MODELADO, LA INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN
 # CON LOS INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-holtwinters.opcion <- function(datos, modelo, pronostico, opcion, nivel = 95) {
+holtwinters.opcion <- function(serie, datos, modelo, pronostico, opcion, periodos = 20, nivel = 95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.hw(datos, modelo, pronostico, nivel)
+           graficar.pronostico.hw(serie, datos, modelo, pronostico, periodos, nivel)
          },
          diagnostico={
            graficar.diagnostico.hw(datos, modelo)
@@ -205,7 +208,7 @@ holtwinters.opcion <- function(datos, modelo, pronostico, opcion, nivel = 95) {
   )
 }
 
-graficar.pronostico.hw <- function(datos, modelo, pronostico, nivel) {
+graficar.pronostico.hw <- function(serie, datos, modelo, pronostico, periodos, nivel) {
   # list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
   #      pron = lines(modelo$fitted[,1], col = "red", lwd = 2),
   #
@@ -215,13 +218,24 @@ graficar.pronostico.hw <- function(datos, modelo, pronostico, nivel) {
   #                       col = c('black','red'),
   #                       bty = "n"),
   #      grid())
-  ggplot(data = pronostico) + xlab("Tiempo") + ylab("Valores") +
+
+  na.a <- rep(NA, length(pronostico$x))
+  na.n <- rep(NA, periodos)
+
+  pronos.df <- data.frame(Index = time(serie),
+                          # Data = c(pronostico$x, na.n),
+                          Data = serie,
+                          Fitted = c(pronostico$fitted, na.n),
+                          Forecast = c(na.a, pronostico$mean),
+                          Lower = c(na.a, pronostico$lower),
+                          Upper = c(na.a, pronostico$upper))
+
+  ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
     geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
-    geom_line(mapping = aes_string(x = 'Index', y = '`Point Forecast`'), colour='blue') +
-    geom_ribbon(mapping = aes_string(x = 'Index',
-                                     ymin = paste('`Lo ', nivel, '`', sep = ''),
-                                     ymax = paste('`Hi ', nivel, '`', sep = '')),alpha = 0.5)
+    geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
+    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
+
 }
 
 
@@ -269,16 +283,16 @@ calcular.holtwinters <- function(datos, periodos = 20, nivel = 95) {
 # MODELADO, LA INFORMACIÓN DE DIAGNOSTICO Y EL RESUMEN
 # CON LOS INDICADORES MÁS REPRESENTATIVOS DEL MODELADO
 
-arima.opcion <- function(datos, modelo, pronostico, opcion, nivel = 95) {
+arima.opcion <- function(serie, datos, modelo, pronostico, opcion, periodos = 20, nivel = 95) {
   switch(opcion,
          pronostico={
-           graficar.pronostico.arima(datos, modelo, pronostico, nivel)
+           graficar.pronostico.arima(serie, datos, modelo, pronostico, periodos, nivel)
          },
          diagnostico={
            graficar.diagnostico.arima(datos, modelo)
          },
          resumen1={
-           resumir1.diagnostico.arima(modelo)
+           resumir1.diagnostico.arima(pronostico)
          },
          resumen2={
            resumir2.diagnostico.arima(modelo)
@@ -289,7 +303,7 @@ arima.opcion <- function(datos, modelo, pronostico, opcion, nivel = 95) {
   )
 }
 
-graficar.pronostico.arima <- function(datos, modelo, pronostico, nivel) {
+graficar.pronostico.arima <- function(serie, datos, modelo, pronostico, periodos, nivel) {
   # list(real = plot(modelo$x, type = "o", col = "black", lwd = 2, pch = 20),
   #      pron = lines(modelo$fitted, col = "red", lwd = 2),
   #      leyenda = legend("topleft",
@@ -298,13 +312,23 @@ graficar.pronostico.arima <- function(datos, modelo, pronostico, nivel) {
   #                       col = c('black','red'),
   #                       bty = "n"),
   #      grid())
-  ggplot(data = pronostico) + xlab("Tiempo") + ylab("Valores") +
+
+  na.a <- rep(NA, length(pronostico$x))
+  na.n <- rep(NA, periodos)
+
+  pronos.df <- data.frame(Index = time(serie),
+                          # Data = c(pronostico$x, na.n),
+                          Data = serie,
+                          Fitted = c(pronostico$fitted, na.n),
+                          Forecast = c(na.a, pronostico$mean),
+                          Lower = c(na.a, pronostico$lower),
+                          Upper = c(na.a, pronostico$upper))
+
+  ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
     geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
-    geom_line(mapping = aes_string(x = 'Index', y = '`Point Forecast`'), colour='blue') +
-    geom_ribbon(mapping = aes_string(x = 'Index',
-                                     ymin = paste('`Lo ', nivel, '`', sep = ''),
-                                     ymax = paste('`Hi ', nivel, '`', sep = '')),alpha = 0.5)
+    geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
+    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
 }
 
 graficar.diagnostico.arima <- function(datos, modelo) {

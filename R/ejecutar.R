@@ -79,7 +79,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 
                                     )
                            ),
-                           tabPanel("ANÁLIZAR",
+                           tabPanel("ANÁLIZAR DATOS",
                                     # titlePanel("Analiza tus Datos"),
                                     sidebarLayout(
                                       sidebarPanel(
@@ -156,7 +156,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                     value = 20,
                                                     min = 10,
                                                     max = 50,
-                                                    step = 10),
+                                                    step = 2),
                                         sliderInput("level",
                                                     h4("Nivel de confianza"),
                                                     value = 95,
@@ -167,8 +167,9 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                       mainPanel(
                                         tabsetPanel(
                                           tabPanel(h5("Pronóstico"), plotOutput("forecast")),
+                                          tabPanel(h5("Resultados"), tableOutput("result")),
                                           tabPanel(h5("Diagnóstico"), plotOutput("diagnosis")),
-                                          tabPanel(h5("Resumen"),
+                                          tabPanel(h5("Resumenes"),
                                                    wellPanel(h4("Medidas de bondad de ajuste"),
                                                              verbatimTextOutput('summary1')),
                                                    wellPanel(h4("Estadísticos del modelo"),
@@ -356,14 +357,17 @@ server <- function(input, output, session) {
   cargar.serie.tiempo <- function() {
     serie.result <- try(generar.serie(datosVec,
                                       inicio = fecha.inicio(input$start),
-                                      frecuencia = as.double(input$frequency)))
+                                      frecuencia = as.double(input$frequency),
+                                      periodos = input$h))
     if(inherits(serie.result, "try-error")) {
       datosSerie <<- list()
       datosDecom <<- list()
+      datosProno <<- list()
       return(NULL)
     } else {
       datosSerie <<- serie.result$serie
       datosDecom <<- serie.result$decom
+      datosProno <<- serie.result$prono
       return(serie.result)
     }
   }
@@ -375,20 +379,21 @@ server <- function(input, output, session) {
     toggleState(id = "func", condition = (input$model == "trend" || input$model == "season"))
   })
 
+  # En esta función se utiliza la serie para pronosticar: datosProno
   calcular.modelo <- function() {
     retorno <- try(switch(input$model,
-                          "trend" = tendencia.funcion(datos = datosSerie,
+                          "trend" = tendencia.funcion(datos = datosProno,
                                                       funcion = input$func,
                                                       estacion = FALSE,
                                                       periodos = input$h,
                                                       nivel = input$level),
-                          "season" = tendencia.funcion(datos = datosSerie,
+                          "season" = tendencia.funcion(datos = datosProno,
                                                        funcion = input$func,
                                                        estacion = TRUE,
                                                        periodos = input$h,
                                                        nivel = input$level),
-                          "holtwinters" = calcular.holtwinters(datosSerie, input$h, input$level),
-                          "arima" = calcular.arima(datosSerie, input$h, input$level)))
+                          "holtwinters" = calcular.holtwinters(datosProno, input$h, input$level),
+                          "arima" = calcular.arima(datosProno, input$h, input$level)))
     if(inherits(retorno, "try-error")) {
       return(NULL)
     } else {
@@ -397,29 +402,30 @@ server <- function(input, output, session) {
     }
   }
 
+  # En esta función se utiliza la serie para pronosticar: datosProno
   calcular.modelo.func <- function() {
     retorno <- try(switch(input$func,
-                          "lineal" = calcular.regresion(datos = datosSerie,
+                          "lineal" = calcular.regresion(datos = datosProno,
                                                         estacion = ifelse(input$model == "season", TRUE, FALSE),
                                                         grado = "grado1",
                                                         periodos = input$h,
                                                         nivel = input$level),
-                          "quadratic" = calcular.regresion(datos = datosSerie,
+                          "quadratic" = calcular.regresion(datos = datosProno,
                                                            estacion = ifelse(input$model == "season", TRUE, FALSE),
                                                            grado = "grado2",
                                                            periodos = input$h,
                                                            nivel = input$level),
-                          "cubic" = calcular.regresion(datos = datosSerie,
+                          "cubic" = calcular.regresion(datos = datosProno,
                                                        estacion = ifelse(input$model == "season", TRUE, FALSE),
                                                        grado = "grado3",
                                                        periodos = input$h,
                                                        nivel = input$level)))
-    # "gfour" = calcular.regresion(datos = datosSerie,
+    # "gfour" = calcular.regresion(datos = datosProno,
     #                              estacion = ifelse(input$model == "season", TRUE, FALSE),
     #                              grado = "grado4",
     #                              periodos = input$h,
     #                              nivel = input$level),
-    # "gfive" = calcular.regresion(datos = datosSerie,
+    # "gfive" = calcular.regresion(datos = datosProno,
     #                              estacion = ifelse(input$model == "season", TRUE, FALSE),
     #                              grado = "grado5",
     #                              periodos = input$h,
@@ -437,6 +443,21 @@ server <- function(input, output, session) {
     req(input$file1)
     retorno <- try(generar.pron(input$model,
                                 "pronostico",
+                                input$start,
+                                input$frequency,
+                                input$h,
+                                input$level))
+    if(inherits(retorno, "try-error")) {
+      return(NULL)
+    } else {
+      return(retorno)
+    }
+  })
+
+  output$result <- renderPlot({
+    req(input$file1)
+    retorno <- try(generar.pron(input$model,
+                                "resultado",
                                 input$start,
                                 input$frequency,
                                 input$h,
@@ -498,27 +519,29 @@ server <- function(input, output, session) {
     serie.result <- cargar.serie.tiempo()
     datosSerie <<- serie.result$serie
     datosDecom <<- serie.result$decom
+    datosProno <<- serie.result$prono
     if(!is.null(datosSerie) && length(datosSerie) > 0 &&
-       !is.null(datosDecom) && length(datosDecom) > 0) {
+       !is.null(datosDecom) && length(datosDecom) > 0 &&
+       !is.null(datosProno) && length(datosProno) > 0) {
       if(tipo == "trend") {
         calcular.modelo()
         calcular.modelo.func()
-        return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos))
+        return(tendencia.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos))
       }
       else {
         if(datosDecom$es.decom) {
           if(tipo == "season") {
             calcular.modelo()
             calcular.modelo.func()
-            return(tendencia.opcion(datosSerie, modeloPron, resultPron, opcion, periodos))
+            return(tendencia.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos))
           }
           else if(tipo == "holtwinters") {
             calcular.modelo()
-            return(holtwinters.opcion(datosSerie, modeloPron, resultPron, opcion, nivel))
+            return(holtwinters.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos, nivel))
           }
           else if(tipo == "arima") {
             calcular.modelo()
-            return(arima.opcion(datosSerie, modeloPron, resultPron, opcion, nivel))
+            return(arima.opcion(datosSerie, datosProno, modeloPron, resultPron, opcion, periodos, nivel))
           }
         }
       }
@@ -549,6 +572,7 @@ ejecutar <- function() {
   totales <<- list()
   estadisticos <<- list()
   datosSerie <<- list()
+  datosProno <<- list()
   modeloPron <<- list()
   resultPron <<- list()
   decimales <<- 6
