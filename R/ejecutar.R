@@ -120,7 +120,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                                                       column(5, tableOutput("test"))
                                                              )
                                                     ),
-                                                    tabPanel(h5("Serie Tiempo"), plotOutput("serie"))
+                                                    tabPanel(h5("Descomposición de la serie"), plotOutput("serie"))
                                         )
                                       )
                                     )
