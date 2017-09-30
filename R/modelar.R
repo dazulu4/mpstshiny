@@ -50,7 +50,8 @@ graficar.pronostico.tend <- function(serie, datos, modelo, pronostico, periodos)
   na.a <- rep(NA, length(pronostico$x))
   na.n <- rep(NA, periodos)
 
-  pronos.df <- data.frame(Index = c(tiempo.a, tiempo.n),
+  pronos.df <- data.frame(#Index = c(tiempo.a, tiempo.n),
+                          Index = time(serie),
                           # Data = c(pronostico$x, na.n),
                           Data = serie,
                           Fitted = c(pronostico$fitted, na.n),
