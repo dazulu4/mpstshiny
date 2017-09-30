@@ -133,33 +133,6 @@ calcular.estacion <- function(datos) {
   seasonaldummy(datos)
 }
 
-# calcular.ciclo <- function(datos, periodos, It) {
-#   reps <- periodos / 10
-#   It.reps <- It[1:frequency(datos)]
-#   It.return <- It.reps
-#   for(i in 1:reps) {
-#     if(length(It.reps) > periodos) {
-#       It.return <- It.reps[1:periodos,]
-#       break
-#     } else {
-#       It.reps <- rep(It.reps[])
-#     }
-#   }
-# }
-
-# calcular.ciclo.inicial <- function(datos, periodos, It) {
-#   f <- frequency(datos)
-#   m <- max(cycle(datos))
-#   r <- f[[1]] - m[[1]]
-#   x <- ifelse(r <= 0, 1, m + 1)
-#   print(list(freq = f,
-#              max_cycle = m,
-#              init_cycle = x))
-#   y <- x + f
-#   rep(It[x:y], periodos)
-# }
-
-
 ### FUNCIÓN QUE GENERA EL RESULTADO DE PRONOSTICO EN FORMATO DATA.FRAME
 generar.resultado.pronostico <- function(resto, pronostico, modelo = "LM") {
   tiem <- fortify(resto)$Index
@@ -191,6 +164,12 @@ generar.resultado.accuracy <- function(resto, pronostico) {
   rp <- generar.resultado.pronostico(resto, pronostico)
   df <- data.frame(accuracy(pronostico))
   df["SSE"] <- round(sum(rp["ErrCuad"]), 4)
-  # print(df)
   return(df)
 }
+
+generar.resultado.criterio <- function(modelo) {
+  df <- data.frame(AIC = AIC(modelo),
+                   BIC = BIC(modelo))
+  return(df)
+}
+

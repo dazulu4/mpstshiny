@@ -47,7 +47,6 @@ cuartil.cuartil <- function(datos) {
 
 serie.tiempo <- function(datos, es.decom = FALSE, decom = NULL) {
   if(es.decom) {
-    # print(decom$type)
     # dtype <- ifelse(decom$type == "additive", "Aditiva", "Multiplicativa")
     dtype <- ""
     titulo <- paste("Serie de Tiempo", dtype, sep = " ")

@@ -99,7 +99,6 @@ graficar.diagnostico.tend <- function(datos, modelo) {
   gresidual <- gresidual + theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
 
   ######Normal Q-Q plot
-  # print(d$tiempo)
   gqqplot<- ggqqplot(d$residuo, xlab = "Cuantiles Teóricos", ylab = "Muestra", color = "blue", ggtheme=theme_gray())+ggtitle("Normal Q-Q Plot")+
     theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.x, hjust=0.5)) +
     theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=size_fonts.y))
@@ -133,8 +132,14 @@ resumir.resultado.tend <- function(resto, pronostico) {
 accuracy.resultado.tend <- function(resto, pronostico) {
   generar.resultado.accuracy(resto, pronostico)
 }
+
 stats.diagnostico.tend <- function(modelo) {
-  summary(modelo)
+  summary <- summary(modelo)
+  criteria <- data.frame(AIC = AIC(modelo),
+                         BIC = BIC(modelo))
+  row.names(criteria) <- NULL
+  list("Summary" = summary,
+       "Criteria" = criteria)
 }
 
 tendencia.funcion <- function(datos, funcion, estacion = FALSE, periodos = 20, nivel = 95) {
@@ -275,8 +280,7 @@ graficar.diagnostico.hw <- function(datos, modelo) {
   size_fonts.y <- 12
 
   d <- data.frame(tiempo=seq(1:length(ts_modelo_fit$xhat)), datos= ts_modelo_fit$xhat, residuo = residuo)
-# print(length(residuo))
-# print(length(ts_modelo_fit$xhat))
+
   ####Residuales##############
   gresidual <- ggplot(d, aes(x=tiempo, y=residuo), type = "dashed")  +geom_smooth(method = "lm", se = FALSE, color = "lightgrey")
   # # gresidual <- gresidual + geom_segment(aes(xend = tiempo, yend = modelo$model$datos), alpha = .2)
@@ -334,8 +338,12 @@ stats.diagnostico.hw <- function(modelo) {
                         SSE = modelo$SSE,
                         call = paste(formula[1], "(formula = ", formula[2], ")", sep = ""))
   coefficients <- data.frame(values = modelo$coefficients)
+  # criteria <- data.frame(AIC = AIC(modelo),
+  #                        BIC = BIC(modelo))
+  # row.names(criteria) <- NULL
   list("Summary:" = summary,
        "Coefficients:" = coefficients)
+       # "Criteria" = criteria)
 }
 
 calcular.holtwinters <- function(datos, periodos = 20, nivel = 95) {

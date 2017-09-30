@@ -185,16 +185,17 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                       ),
                                       mainPanel(
                                         tabsetPanel(
-                                          tabPanel(h5("Pronóstico"), plotOutput("forecast")),
-                                          tabPanel(h5("Resúmen pronóstico"),
-                                                   wellPanel(h4("Resultados de pronóstico"),
-                                                             dataTableOutput("result")),
-                                                   wellPanel(h4("Medidas de precisión de pronóstico"),
-                                                             tableOutput('accuracy'))),
                                           tabPanel(h5("Diagnóstico"), plotOutput("diagnosis")),
-                                          tabPanel(h5("Resúmen modelo"),
+                                          tabPanel(h5("Resúmen Modelo"),
                                                    wellPanel(h4("Estadísticos del modelo"),
-                                                             verbatimTextOutput('stats')))
+                                                             verbatimTextOutput('stats'))),
+                                          tabPanel(h5("Pronóstico"), plotOutput("forecast")),
+                                          tabPanel(h5("Resúmen Pronóstico"),
+                                                   fluidRow(wellPanel(h4("Resultados de pronóstico"),
+                                                                      dataTableOutput("result")),
+                                                            wellPanel(h4("Medidas de precisión de pronóstico"),
+                                                                      tableOutput('accuracy'))))
+                                          # tabPanel(h5("Comparativo Modelos"), tableOutput("compare"))
                                         )
                                       )
                                     )
@@ -540,6 +541,21 @@ server <- function(input, output, session) {
       return(retorno)
     }
   }, spacing = "m", striped = TRUE, digits = decimales)
+
+  # output$compare <- renderTable({
+  #   req(input$file1)
+  #   # retorno <- try(generar.pron(input$model,
+  #   #                             "accuracy",
+  #   #                             input$start,
+  #   #                             input$frequency,
+  #   #                             input$h,
+  #   #                             input$level))
+  #   # if(inherits(retorno, "try-error")) {
+  #   #   return(data.frame(Mensaje = "No existe información comparativa de los pronósticos."))
+  #   # } else {
+  #   #   return(retorno)
+  #   # }
+  # }, spacing = "m", striped = TRUE, digits = decimales)
 
   output$diagnosis <- renderPlot({
     req(input$file1)
