@@ -158,3 +158,39 @@ calcular.estacion <- function(datos) {
 #   y <- x + f
 #   rep(It[x:y], periodos)
 # }
+
+
+### FUNCIÓN QUE GENERA EL RESULTADO DE PRONOSTICO EN FORMATO DATA.FRAME
+generar.resultado.pronostico <- function(resto, pronostico, modelo = "LM") {
+  tiem <- fortify(resto)$Index
+  real <- round(fortify(resto)$Data, 4)
+  pron <- round(pronostico$mean, 4)
+  linf <- round(pronostico$lower, 4)
+  lsup <- round(pronostico$upper, 4)
+  errc <- round(pron - real, 4)
+  err2 <- round(errc^2, 4)
+
+  retorno <-
+    data.frame(
+      "Fecha" = tiem,
+      "Real" = real,
+      "Pron" = pron,
+      "LimInf" = linf,
+      "LimSup" = lsup,
+      "ErrCuad" = err2
+    )
+
+  # retorno <- retorno[order("Fecha"),]
+
+  return(retorno)
+
+}
+
+### FUNCIÓN QUE GENERA EL RESULTADO DE RESUMEN DE PRESICIÓN EN DATA.FRAME
+generar.resultado.accuracy <- function(resto, pronostico) {
+  rp <- generar.resultado.pronostico(resto, pronostico)
+  df <- data.frame(accuracy(pronostico))
+  df["SSE"] <- round(sum(rp["ErrCuad"]), 4)
+  # print(df)
+  return(df)
+}

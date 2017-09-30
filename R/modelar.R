@@ -17,7 +17,7 @@ tendencia.opcion <- function(serie, datos, resto, modelo, pronostico, opcion, pe
            resumir.resultado.tend(resto, pronostico)
          },
          accuracy={
-           accuracy.resultado.tend(pronostico)
+           accuracy.resultado.tend(resto, pronostico)
          },
          diagnostico={
            graficar.diagnostico.tend(datos, modelo)
@@ -59,11 +59,15 @@ graficar.pronostico.tend <- function(serie, datos, modelo, pronostico, periodos)
                           Lower = c(na.a, pronostico$lower),
                           Upper = c(na.a, pronostico$upper))
 
-  ggplot(data = pronos.df) + xlab("Tiempo") + ylab("Valores") +
+  ggplot(data = pronos.df) + #xlab("Tiempo") + ylab("Valores") +
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
     geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
     geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
-    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
+    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)+
+    labs( x="Tiempo", y="Valores")+ggtitle(tipo_modelo[[1]])+ #ggtitle("Modelo")+
+    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=26, hjust=0.5)) +
+    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=22))
+
 
 }
 
@@ -122,16 +126,11 @@ graficar.diagnostico.tend <- function(datos, modelo) {
 }
 
 resumir.resultado.tend <- function(resto, pronostico) {
-  print(str(pronostico))
-
-  retorno <- data.frame(vacio = "")
-
-  return(retorno)
+  generar.resultado.pronostico(resto,pronostico)
 }
 
-accuracy.resultado.tend <- function(pronostico) {
-  retorno <- data.frame(accuracy(pronostico))
-  return(retorno)
+accuracy.resultado.tend <- function(resto, pronostico) {
+  generar.resultado.accuracy(resto, pronostico)
 }
 stats.diagnostico.tend <- function(modelo) {
   summary(modelo)
@@ -207,7 +206,7 @@ holtwinters.opcion <- function(serie, datos, resto, modelo, pronostico, opcion, 
            resumir.resultado.hw(resto, pronostico)
          },
          accuracy={
-           accuracy.resultado.hw(pronostico)
+           accuracy.resultado.hw(resto, pronostico)
          },
          diagnostico={
            graficar.diagnostico.hw(datos, modelo)
@@ -247,7 +246,11 @@ graficar.pronostico.hw <- function(serie, datos, modelo, pronostico, periodos, n
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
     geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
     geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
-    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
+    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)+
+    ggtitle(tipo_modelo[[1]])+ #ggtitle("Modelo")+
+    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=26, hjust=0.5)) +
+    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=22))
+
 
 }
 
@@ -313,12 +316,11 @@ graficar.diagnostico.hw <- function(datos, modelo) {
 }
 
 resumir.resultado.hw <- function(resto, pronostico) {
-
+  generar.resultado.pronostico(resto,pronostico,"HW")
 }
 
-accuracy.resultado.hw <- function(pronostico) {
-  retorno <- data.frame(accuracy(pronostico))
-  return(retorno)
+accuracy.resultado.hw <- function(resto, pronostico) {
+  generar.resultado.accuracy(resto, pronostico)
 }
 
 stats.diagnostico.hw <- function(modelo) {
@@ -357,7 +359,7 @@ arima.opcion <- function(serie, datos, resto, modelo, pronostico, opcion, period
            resumir.resultado.arima(resto, pronostico)
          },
          accuracy={
-           accuracy.resultado.arima(pronostico)
+           accuracy.resultado.arima(resto, pronostico)
          },
          diagnostico={
            graficar.diagnostico.arima(datos, modelo)
@@ -396,7 +398,11 @@ graficar.pronostico.arima <- function(serie, datos, modelo, pronostico, periodos
     geom_line(mapping = aes_string(x = 'Index', y = 'Data')) +
     geom_line(mapping = aes_string(x = 'Index', y = 'Fitted'), colour='red') +
     geom_line(mapping = aes_string(x = 'Index', y = 'Forecast'), colour='blue') +
-    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)
+    geom_ribbon(mapping = aes_string(x = 'Index', ymin = 'Lower', ymax = 'Upper'), alpha = 0.5)+
+    ggtitle(tipo_modelo[[1]])+ #ggtitle("Modelo")+
+    theme(plot.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=26, hjust=0.5)) +
+    theme(axis.title = element_text(family = "Trebuchet MS", color="#666666", face="bold", size=22))
+
 }
 
 graficar.diagnostico.arima <- function(datos, modelo) {
@@ -463,12 +469,11 @@ graficar.diagnostico.arima <- function(datos, modelo) {
 }
 
 resumir.resultado.arima <- function(resto, pronostico) {
-
+  generar.resultado.pronostico(resto,pronostico,"AR")
 }
 
-accuracy.resultado.arima <- function(pronostico) {
-  retorno <- data.frame(accuracy(pronostico))
-  return(retorno)
+accuracy.resultado.arima <- function(resto, pronostico) {
+  generar.resultado.accuracy(resto, pronostico)
 }
 
 stats.diagnostico.arima <- function(modelo) {

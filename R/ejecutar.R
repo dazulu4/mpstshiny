@@ -14,6 +14,7 @@ library(ggplot2)
 library(ggpubr)
 library(ggfortify)
 library(lubridate)
+library(htmltools)
 require(graphics)
 
 ######################################################################
@@ -26,6 +27,7 @@ semanal <<- round(diaria/7, 2)
 mensual <<- 12.0
 trimestral <<- 4.0
 anual <<- 1.0
+tipo_modelo <<- list()
 
 # Mensajes de usuario
 error.params.serie <<- paste("La serie de tiempo no debe tener menos de 2 periodos.",
@@ -185,7 +187,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
                                         tabsetPanel(
                                           tabPanel(h5("Pronóstico"), plotOutput("forecast")),
                                           tabPanel(h5("Resultados"),
-                                                   wellPanel(h4("Medidas de bondad de ajuste"),
+                                                   wellPanel(h4("Resultados de pronóstico"),
                                                              dataTableOutput("result")),
                                                    wellPanel(h4("Medidas de bondad de ajuste"),
                                                              tableOutput('accuracy'))),
@@ -398,6 +400,12 @@ server <- function(input, output, session) {
 
   observeEvent(input$model, {
     toggleState(id = "func", condition = (input$model == "trend" || input$model == "season"))
+    tipo_modelo <<- list(
+      ifelse(input$model == "trend", "Tendencias Simple",
+             ifelse(input$model == "season","Tendencias Estacionales",
+                    ifelse(input$model == "holtwinters", "Suavizado HoltWinters",
+                           ifelse(input$model == "arima", "Modelado ARIMA",""))))
+      )
   })
 
   # En esta función se utiliza la serie para pronosticar: datosProno
@@ -484,11 +492,34 @@ server <- function(input, output, session) {
                                 input$h,
                                 input$level))
     if(inherits(retorno, "try-error")) {
-      return(NULL)
+      return(data.frame(Mensaje = "No existe información resultado de los pronósticos."))
     } else {
 
+      sketch <- withTags(table(
+        tableHeader(retorno),
+        tableFooter(retorno)
+      ))
+
+      opts <- list(
+        pageLength = 5,
+        searchHighlight = TRUE)
+        # footerCallback = JS(
+        #   "function( tfoot, data, start, end, display ) {",
+        #   "var api = this.api();",
+        #   "$( api.column(1).footer() ).html(",
+        #   "api.column(1).data().reduce( function ( a, b ) {",
+        #   "return a + b;",
+        #   "} )",
+        #   "$( api.column(6).footer() ).html(",
+        #   "api.column(6).data().reduce( function ( a, b ) {",
+        #   "return a + b;",
+        #   "} )",
+        #   ");",
+        #   "}"))
+
       datatable(retorno,
-                options = list(pageLength = 5),
+                # container = sketch,
+                options = opts,
                 class = 'cell-border stripe',
                 rownames = TRUE,
                 style = "bootstrap")
@@ -603,6 +634,7 @@ ejecutar <- function() {
   modeloPron <<- list()
   resultPron <<- list()
   decimales <<- 6
+  tipo_modelo <<- list()
 
   useShinyjs()
   runApp(shinyApp(ui = ui, server = server))
